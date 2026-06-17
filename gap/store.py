@@ -94,6 +94,15 @@ class Store:
         self.conn.commit()
         return cur.lastrowid
 
+    def set_fix_accepted(self, fix_id: int, accepted: int) -> bool:
+        """Record the user's decision on a fix. accepted: 1 = took it, -1 = rejected.
+        Returns False if no such fix row exists."""
+        cur = self.conn.execute(
+            "UPDATE fix SET accepted=? WHERE id=?", (accepted, fix_id)
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
     def full_record(self, submission_id: int) -> dict:
         """Read back a complete run — proves the data model round-trips."""
         c = self.conn

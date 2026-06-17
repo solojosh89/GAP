@@ -97,4 +97,10 @@ print("{BUG_PRESENT}" if reported != actual else "{BUG_ABSENT}", detail)
         return Fix(
             fixed_code=fixed,
             explanation="Move `migrated += 1` inside the `if` so it counts real inserts, not attempts.",
+            lesson=(
+                "Count the success, not the attempt: put your `+= 1` on the line that "
+                "does the actual work, so a skipped item never inflates the total. "
+                "Gut check next time - if every item were skipped, would the count "
+                "still climb? If yes, you're counting tries, not results."
+            ),
         )

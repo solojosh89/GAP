@@ -51,5 +51,27 @@ def index():
                            filename=uploaded.filename)
 
 
+@app.route("/decide", methods=["POST"])
+def decide():
+    """Record whether the user took the fix. This is the seed of the across-time
+    loop (Floor 2): we keep what was offered and whether it was accepted."""
+    try:
+        fix_id = int(request.form.get("fix_id", ""))
+    except (TypeError, ValueError):
+        return render_template("index.html", result=None, level="simple",
+                               error="Bad fix id."), 400
+
+    choice = request.form.get("choice")
+    if choice not in ("accept", "reject"):
+        return render_template("index.html", result=None, level="simple",
+                               error="Bad choice."), 400
+
+    accepted = 1 if choice == "accept" else -1
+    ok = _store.set_fix_accepted(fix_id, accepted)
+    decided = choice if ok else None
+    return render_template("index.html", result=None, level="simple",
+                           decided=decided)
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

@@ -260,6 +260,64 @@
       color: #64748b;
     }
 
+    /* Teach one notch */
+    .lesson-box {
+      margin-top: 16px;
+      background: #14210f;
+      border: 1px solid #2f5320;
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    .lesson-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #86efac;
+      margin-bottom: 6px;
+    }
+    .lesson-text {
+      font-size: 0.9rem;
+      color: #bbf7d0;
+      line-height: 1.5;
+    }
+
+    /* Accept / reject */
+    .decide-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .btn-decide {
+      flex: 1;
+      padding: 11px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-decide.accept { background: #166534; color: #dcfce7; }
+    .btn-decide.accept:hover { background: #15803d; }
+    .btn-decide.reject {
+      background: transparent;
+      color: #94a3b8;
+      border-color: #2d3448;
+    }
+    .btn-decide.reject:hover { background: #2d3448; color: #e2e8f0; }
+
+    /* Decision recorded */
+    .decided-banner {
+      background: #14210f;
+      border: 1px solid #2f5320;
+      color: #86efac;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+    }
+
     .caveat {
       font-size: 0.8rem;
       color: #475569;
@@ -290,6 +348,16 @@
 
 {% if error %}
 <div class="error-banner" style="max-width:680px;width:100%">{{ error }}</div>
+{% endif %}
+
+{% if decided %}
+<div class="decided-banner" style="max-width:680px;width:100%">
+  {% if decided == 'accept' %}
+    Recorded: you took this fix. GAP keeps that so it can later check whether it held.
+  {% else %}
+    Recorded: you passed on this fix. That's a signal too - GAP keeps it.
+  {% endif %}
+</div>
 {% endif %}
 
 <div class="card">
@@ -381,6 +449,27 @@
         <div class="fix-explanation">{{ result.fix.explanation }}</div>
         <div class="fix-code">{{ result.fix.fixed_code }}</div>
       </div>
+    {% endif %}
+
+    {# ---------- TEACH (one notch up, so you need GAP less) ---------- #}
+    {% if result.fix.lesson %}
+    <div class="lesson-box">
+      <div class="lesson-label">Learn it</div>
+      <div class="lesson-text">{{ result.fix.lesson }}</div>
+    </div>
+    {% endif %}
+
+    {# ---------- ACCEPT / REJECT (seed of the across-time loop) ---------- #}
+    {% if result.fix_id %}
+    <form method="POST" action="/decide" class="decide-row">
+      <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
+      <button type="submit" name="choice" value="accept" class="btn-decide accept">
+        I'll take this fix
+      </button>
+      <button type="submit" name="choice" value="reject" class="btn-decide reject">
+        Not this one
+      </button>
+    </form>
     {% endif %}
 
   {% elif result.proven %}

@@ -25,6 +25,7 @@ class Outcome:
     fix_offered: bool
     fix: Optional[Fix]
     notes: str
+    fix_id: Optional[int] = None   # db id of the offered fix, for accept/reject
 
 
 # Do-no-harm check: after the fix, the code must still do its basic job.
@@ -83,11 +84,11 @@ def run(code: str, language: str, engine: Engine, store: Store,
         no_harm = r3.saw("GAP_SMOKE:OK")
 
         fix_ok = gone and no_harm
-        store.add_fix(finding_id, fix.fixed_code, fix_ok)
+        fix_id = store.add_fix(finding_id, fix.fixed_code, fix_ok)
 
         if fix_ok:
             return Outcome(finding, True, _detail(r1), True, fix,
-                           "Problem proven, fix re-proven, nothing broke.")
+                           "Problem proven, fix re-proven, nothing broke.", fix_id=fix_id)
 
         notes = "Fix withheld: "
         if not gone:

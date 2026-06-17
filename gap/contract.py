@@ -31,7 +31,9 @@ class Proof:
 class Fix:
     """A replacement for the submitted code that should remove the problem."""
     fixed_code: str
-    explanation: str = ""   # later: this is where 'teach, don't just patch' lives
+    explanation: str = ""   # terse: WHAT changed in the code
+    lesson: str = ""        # 'teach, don't just patch': the pattern, so the user
+                            # catches it themselves next time and needs GAP less
 
 
 @dataclass
