@@ -28,12 +28,16 @@ python tests/test_sandbox_safety.py   # proves the sandbox contains runaway code
 - **Engine is a STUB.** `gap/engine.py` hard-codes the finding/proof/fix for the
   example. The real Claude-backed engine implements the same `Engine` interface and
   drops into the same pipeline. This boundary is intentional.
-- **Sandbox is a SPIKE.** It contains runaway/crashing code (time limit, separate
-  workdir). It does **NOT** yet jail the filesystem or network — a script using
-  absolute paths or sockets is not blocked. Real isolation needs an OS-level sandbox
-  (Docker / nsjail / Windows Job Objects). **This is the single most important
-  hardening job before any real user's code runs.**
-- One language (Python), one finding, no UI, no level dial.
+- **Sandbox containment (proven by `tests/test_sandbox_safety.py`):** time limit,
+  whole-process-tree kill (no orphans), per-process memory cap, and active-process
+  cap (fork bombs) — via a Windows Job Object, with a POSIX process-group + rlimit
+  fallback. It still does **NOT** jail the filesystem or network: a script can read,
+  write, or delete files it has rights to, and open sockets. True fs/network
+  isolation needs an OS-level jail (Windows AppContainer, a container, or a separate
+  low-privilege user) — that is the remaining hardening job, and why `app.py` binds
+  to localhost only.
+- One language (Python), one finding. UI exists (drop file + level dial); no
+  accept/reject on fixes yet, and `Fix.explanation` does not yet "teach one notch".
 
 ## Architecture map
 - `gap/contract.py` — the shapes both engines speak (Finding, Proof, Fix, RunResult).

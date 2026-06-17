@@ -1,5 +1,8 @@
-"""Proves the sandbox CONTAINS misbehaving code: an infinite loop is killed by
-the time limit instead of hanging the host, and a crash is captured cleanly.
+"""Proves the sandbox CONTAINS misbehaving code:
+  - an infinite loop is killed by the time limit instead of hanging the host,
+  - a crash is captured cleanly,
+  - a child process spawned by the script is killed WITH the tree (no orphans),
+  - a memory hog is capped instead of taking the host down.
 
     python tests/test_sandbox_safety.py
 """
@@ -7,6 +10,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from gap.sandbox import run_script  # noqa: E402
@@ -38,7 +42,62 @@ def test_crash_is_captured():
         shutil.rmtree(workdir, ignore_errors=True)
 
 
+def test_orphaned_child_is_killed_with_the_tree():
+    """The script spawns a child that, if left alive, writes a sentinel file after
+    the parent is already gone. We time the parent out; a correct sandbox kills the
+    WHOLE tree, so the sentinel must NEVER appear. (The old runner killed only the
+    direct child and this would fail -- the orphan would survive and write it.)"""
+    workdir = tempfile.mkdtemp(prefix="gap_safety_")
+    try:
+        sentinel = os.path.join(workdir, "orphan_was_here.txt")
+        # Grandchild sleeps 3s then writes the sentinel; parent sleeps 10s (forces timeout).
+        # Two separate files avoid all command-line quoting fragility.
+        with open(os.path.join(workdir, "grandchild.py"), "w", encoding="utf-8") as f:
+            f.write("import time\n"
+                    "time.sleep(3)\n"
+                    "open('orphan_was_here.txt', 'w').write('alive')\n")
+        with open(os.path.join(workdir, "spawner.py"), "w", encoding="utf-8") as f:
+            f.write("import subprocess, sys, time\n"
+                    "subprocess.Popen([sys.executable, 'grandchild.py'])\n"
+                    "time.sleep(10)\n")
+        r = run_script("spawner.py", workdir, timeout_s=2.0)
+        assert r.timed_out, "expected the parent to be timed out"
+        # Wait past the grandchild's 3s write point; it must have been killed first.
+        time.sleep(3.0)
+        assert not os.path.exists(sentinel), (
+            "orphaned child survived the timeout and wrote the sentinel -- "
+            "the process tree was NOT contained"
+        )
+        print("OK: spawned child was killed with the tree (no orphan survived)")
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
+def test_memory_hog_is_capped():
+    """Allocating far past the memory cap must fail/kill the child, not the host."""
+    workdir = tempfile.mkdtemp(prefix="gap_safety_")
+    try:
+        # Try to grab ~400MB under a 64MB cap, in a way the allocator can't elide.
+        hog = (
+            "blocks = []\n"
+            "for _ in range(400):\n"
+            "    blocks.append(bytearray(1024 * 1024))  # touch 1MB at a time\n"
+            "print('GAP_ALLOC_OK', len(blocks))\n"
+        )
+        with open(os.path.join(workdir, "hog.py"), "w", encoding="utf-8") as f:
+            f.write(hog)
+        r = run_script("hog.py", workdir, timeout_s=10.0, memory_mb=64)
+        assert "GAP_ALLOC_OK" not in r.stdout, "memory cap did not stop the allocation"
+        assert r.timed_out or r.exit_code not in (0, None), \
+            "expected the memory hog to be killed/failed, not to succeed"
+        print("OK: memory hog capped (did not allocate past the limit)")
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
 if __name__ == "__main__":
     test_infinite_loop_is_killed()
     test_crash_is_captured()
+    test_orphaned_child_is_killed_with_the_tree()
+    test_memory_hog_is_capped()
     print("\nAll sandbox safety checks passed.")
