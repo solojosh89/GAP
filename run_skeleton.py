@@ -39,6 +39,15 @@ def main():
     else:
         print(f"\nNo fix offered. {outcome.notes}")
 
+    if outcome.sweep is not None:
+        print("\nWhat I did NOT check (the standing sweep - so you never assume 'all clear'):")
+        if outcome.sweep.acted_on_one:
+            print("  - I showed the ONE most dangerous problem, not every problem.")
+        for note in outcome.sweep.boundary_notes:
+            print(f"  - {note}")
+        if outcome.sweep.across_time_gap:
+            print("  - I can't yet tell whether this breaks months from now (across-time check not built).")
+
     print("\n(There may be more problems - this shows one. Never assume 'all clear'.)")
 
 

@@ -11,7 +11,7 @@ import tempfile
 from dataclasses import dataclass
 from typing import Optional
 
-from .contract import BUG_ABSENT, BUG_PRESENT, Finding, Fix, RunResult
+from .contract import BUG_ABSENT, BUG_PRESENT, Finding, Fix, RunResult, Sweep
 from .engine import Engine
 from .sandbox import run_script
 from .store import Store
@@ -26,6 +26,7 @@ class Outcome:
     fix: Optional[Fix]
     notes: str
     fix_id: Optional[int] = None   # db id of the offered fix, for accept/reject
+    sweep: Optional[Sweep] = None  # the standing 'what aren't we asking?' gate
 
 
 # Do-no-harm check: after the fix, the code must still do its basic job.
@@ -58,6 +59,11 @@ def run(code: str, language: str, engine: Engine, store: Store,
     finding = engine.find(code, language)
     finding_id = store.add_finding(submission_id, finding.problem, finding.rank, finding.confidence)
 
+    # STANDING SWEEP GATE: runs every time, automatically. Discloses the boundaries
+    # of what GAP did (acted on ONE problem; what could only be flagged; the
+    # across-time gap) so 'all clear' is never implied. NOT a second guesser.
+    sweep = Sweep(boundary_notes=engine.sweep(code, finding))
+
     # 2) PROVE it by running a demonstration against the original code.
     proof = engine.prove(code, finding)
     workdir = tempfile.mkdtemp(prefix="gap_")
@@ -71,7 +77,8 @@ def run(code: str, language: str, engine: Engine, store: Store,
         if not proven:
             # Honest gate: if we cannot prove it, we FLAG it, we do not claim it.
             return Outcome(finding, False, _detail(r1), False, None,
-                           "Could not prove the problem by running it — flagged, not claimed.")
+                           "Could not prove the problem by running it — flagged, not claimed.",
+                           sweep=sweep)
 
         # 3) FIX, then RE-PROVE against the fixed code, then SMOKE-check for harm.
         fix = engine.fix(code, finding)
@@ -88,13 +95,14 @@ def run(code: str, language: str, engine: Engine, store: Store,
 
         if fix_ok:
             return Outcome(finding, True, _detail(r1), True, fix,
-                           "Problem proven, fix re-proven, nothing broke.", fix_id=fix_id)
+                           "Problem proven, fix re-proven, nothing broke.",
+                           fix_id=fix_id, sweep=sweep)
 
         notes = "Fix withheld: "
         if not gone:
             notes += "re-proof still shows the bug. "
         if not no_harm:
             notes += "smoke check failed (the fix broke the code). "
-        return Outcome(finding, True, _detail(r1), False, None, notes.strip())
+        return Outcome(finding, True, _detail(r1), False, None, notes.strip(), sweep=sweep)
     finally:
         shutil.rmtree(workdir, ignore_errors=True)

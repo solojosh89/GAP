@@ -22,6 +22,11 @@ class Engine:
     def fix(self, code: str, finding: Finding) -> Fix:
         raise NotImplementedError
 
+    def sweep(self, code: str, finding: Finding) -> list:
+        """Honest boundary notes for the standing sweep — what this engine could
+        only FLAG, not PROVE, for this code. Default: nothing extra to disclose."""
+        return []
+
 
 class StubEngine(Engine):
     """Hard-coded for examples/buggy_migrate.py (the 'count lie' bug).
@@ -112,3 +117,13 @@ print("{BUG_PRESENT}" if reported != actual else "{BUG_ABSENT}", detail)
                 "still climb? If yes, you're counting tries, not results."
             ),
         )
+
+    def sweep(self, code: str, finding: Finding) -> list:
+        if finding.confidence == "none":
+            return []
+        return [
+            "This check ran fully in isolation, which is why it could be PROVEN. "
+            "Problems that only show up against a real database, a network call, or a "
+            "live screen can be flagged but not proven by running - those are a "
+            "different, harder kind of check.",
+        ]

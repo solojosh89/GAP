@@ -4,7 +4,7 @@ These are deliberately small. The real (LLM-backed) engine and the stub engine
 both speak in these objects, so either can plug into the same pipeline.
 """
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 # Proof scripts communicate their verdict by printing one of these markers.
@@ -40,6 +40,22 @@ class Fix:
     explanation: str = ""   # terse: WHAT changed in the code
     lesson: str = ""        # 'teach, don't just patch': the pattern, so the user
                             # catches it themselves next time and needs GAP less
+
+
+@dataclass
+class Sweep:
+    """The standing 'what aren't we asking?' gate — runs automatically every time,
+    like the prove-gate and fix-gate. It is GAP's line over a linter: it raises the
+    question the user didn't know to ask.
+
+    CRITICAL: it does NOT invent more unproven problems (that would be the exact
+    prove-don't-assert violation GAP exists to kill). It discloses the BOUNDARIES of
+    what GAP just did — what it acted on, what it could only flag not prove, and what
+    it cannot see at all — so 'all clear' is never implied. Never 'done', by design.
+    """
+    acted_on_one: bool = True       # Floor 1 acts on the single most-dangerous problem only
+    across_time_gap: bool = True    # no outcome data yet -> can't say if this breaks later
+    boundary_notes: list = field(default_factory=list)  # what could only be flagged, not proven
 
 
 @dataclass

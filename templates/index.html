@@ -217,6 +217,37 @@
       user-select: none;
     }
     .simple-details summary:hover { color: #94a3b8; }
+    .sweep-simple {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin-top: 20px;
+      line-height: 1.5;
+    }
+
+    /* Sweep panel (the standing 'what aren't we asking?' gate) */
+    .sweep-box {
+      margin-top: 24px;
+      padding: 14px 16px;
+      background: #1a1f2e;
+      border: 1px solid #2d3448;
+      border-radius: 8px;
+    }
+    .sweep-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #fcd34d;
+      margin-bottom: 10px;
+    }
+    .sweep-list {
+      margin: 0;
+      padding-left: 18px;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+    .sweep-list li { margin-bottom: 6px; }
     .why-text {
       font-size: 0.9rem;
       color: #94a3b8;
@@ -549,9 +580,31 @@
 
   {% endif %}
 
+  {# ---------- SWEEP: the standing 'what aren't we asking?' gate ---------- #}
+  {% if level != 'simple' and result.sweep %}
+  <div class="sweep-box">
+    <div class="sweep-label">What I did NOT check — so you don’t assume “all clear”</div>
+    <ul class="sweep-list">
+      {% if result.sweep.acted_on_one %}
+      <li>I showed the ONE most dangerous problem, not every problem. There may be more.</li>
+      {% endif %}
+      {% for note in result.sweep.boundary_notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+      {% if result.sweep.across_time_gap %}
+      <li>I can’t yet tell whether this breaks months from now — the across-time check isn’t built (that’s a later floor).</li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+
   {# ---------- CAVEAT ---------- #}
   <div class="caveat">
+    {% if level == 'simple' %}
+    This is “one real problem found,” not “all clean” — there may be more, and I can’t yet tell if it’ll break months from now.
+    {% else %}
     There may be more problems - this shows one. Never assume "all clear".
+    {% endif %}
   </div>
 </div>
 {% endif %}
