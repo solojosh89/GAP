@@ -15,10 +15,14 @@ BUG_ABSENT = "GAP_PROOF:BUG_ABSENT"
 @dataclass
 class Finding:
     """One problem the engine claims exists in the submitted code."""
-    problem: str            # plain-language description
+    problem: str            # developer-facing description (Normal/Expert tiers)
     rank: int               # 1 = most dangerous; the pipeline acts on the top one only
-    confidence: str         # "high" | "medium" | "low"
+    confidence: str         # "high" | "medium" | "low" | "none"
     why_it_matters: str = ""
+    # Vibe-coder tier (Simple): ONE plain sentence with no jargon, plus a homely
+    # analogy. NEVER shows function names, line numbers, proof markers, or code.
+    plain: str = ""
+    analogy: str = ""
 
 
 @dataclass

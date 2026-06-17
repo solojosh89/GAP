@@ -183,6 +183,40 @@
       margin: 12px 0 8px;
       line-height: 1.4;
     }
+
+    /* Simple (vibe-coder) tier */
+    .plain-sentence {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      line-height: 1.5;
+    }
+    .analogy {
+      font-size: 1rem;
+      color: #cbd5e1;
+      line-height: 1.55;
+      margin-top: 14px;
+      padding-left: 14px;
+      border-left: 3px solid #60a5fa;
+      font-style: italic;
+    }
+    .simple-action {
+      font-size: 0.95rem;
+      color: #94a3b8;
+      margin-top: 22px;
+    }
+    .simple-details {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #2d3448;
+    }
+    .simple-details summary {
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #64748b;
+      user-select: none;
+    }
+    .simple-details summary:hover { color: #94a3b8; }
     .why-text {
       font-size: 0.9rem;
       color: #94a3b8;
@@ -405,78 +439,114 @@
   <div class="result-file">{{ filename }}</div>
   {% endif %}
 
-  {# ---------- PROBLEM ---------- #}
-  <span class="tag {% if result.proven %}tag-proven{% else %}tag-unproven{% endif %}">
-    {% if result.proven %}Proved{% else %}Flagged (unproved){% endif %}
-  </span>
+  {# ============================================================= #}
+  {# SIMPLE = the vibe-coder tier: one plain sentence + a homely    #}
+  {# analogy + one safe choice. NO function names, lines, proof     #}
+  {# markers, or code. Everything technical hides behind a reveal.  #}
+  {# ============================================================= #}
+  {% if level == 'simple' %}
 
-  <div class="problem-text">{{ result.finding.problem }}</div>
+    <p class="plain-sentence">{{ result.finding.plain or result.finding.problem }}</p>
+    {% if result.proven and result.finding.analogy %}
+    <p class="analogy">{{ result.finding.analogy }}</p>
+    {% endif %}
 
-  {% if result.finding.why_it_matters %}
-  <div class="why-text">{{ result.finding.why_it_matters }}</div>
-  {% endif %}
+    {% if result.fix_offered and result.fix_id %}
+      <p class="simple-action">Good news — I found a fix and already checked it doesn’t break anything.</p>
+      <form method="POST" action="/decide" class="decide-row">
+        <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
+        <button type="submit" name="choice" value="accept" class="btn-decide accept">Yes, fix it</button>
+        <button type="submit" name="choice" value="reject" class="btn-decide reject">Not now</button>
+      </form>
+    {% elif result.proven %}
+      <p class="simple-action">This one’s real, but I couldn’t fix it safely on my own — best to look at it yourself.</p>
+    {% endif %}
 
-  {# ---------- PROOF ---------- #}
-  {% if level in ['normal', 'expert'] %}
-  <div class="section-label">Proof output</div>
-  <div class="proof-detail {% if not result.proven %}unproven{% endif %}">{{ result.proof_detail }}</div>
-  {% endif %}
+    {% if result.proven %}
+    <details class="simple-details">
+      <summary>Show me the details</summary>
+      <div class="why-text" style="margin-top:14px">{{ result.finding.problem }}</div>
+      <div class="section-label">Proof (I ran your code)</div>
+      <div class="proof-detail">{{ result.proof_detail }}</div>
+      {% if result.fix_offered and result.fix %}
+      <div class="section-label">The fix</div>
+      <div class="fix-box"><div class="fix-code">{{ result.fix.fixed_code }}</div></div>
+        {% if result.fix.lesson %}
+        <div class="lesson-box">
+          <div class="lesson-label">Learn it</div>
+          <div class="lesson-text">{{ result.fix.lesson }}</div>
+        </div>
+        {% endif %}
+      {% endif %}
+    </details>
+    {% endif %}
 
-  {% if level == 'expert' and result.proven %}
-  <details>
-    <summary>Show proof script</summary>
-    <pre>{{ result.finding.problem }}</pre>
-  </details>
-  {% endif %}
+  {# ============================================================= #}
+  {# NORMAL / EXPERT = developer tiers: full detail.                #}
+  {# ============================================================= #}
+  {% else %}
 
-  {# ---------- FIX ---------- #}
-  {% if result.fix_offered and result.fix %}
-    <div class="section-label">
-      <span class="tag tag-fixed">Fix (re-proved, nothing broke)</span>
-    </div>
+    {# ---------- PROBLEM ---------- #}
+    <span class="tag {% if result.proven %}tag-proven{% else %}tag-unproven{% endif %}">
+      {% if result.proven %}Proved{% else %}Flagged (unproved){% endif %}
+    </span>
 
-    {% if level == 'simple' %}
-      <div class="why-text">{{ result.fix.explanation }}</div>
+    <div class="problem-text">{{ result.finding.problem }}</div>
 
-    {% elif level == 'normal' %}
-      <div class="fix-explanation">{{ result.fix.explanation }}</div>
-      <div class="fix-box">
-        <div class="fix-code">{{ result.fix.fixed_code }}</div>
+    {% if result.finding.why_it_matters %}
+    <div class="why-text">{{ result.finding.why_it_matters }}</div>
+    {% endif %}
+
+    {# ---------- PROOF ---------- #}
+    <div class="section-label">Proof output</div>
+    <div class="proof-detail {% if not result.proven %}unproven{% endif %}">{{ result.proof_detail }}</div>
+
+    {# ---------- FIX ---------- #}
+    {% if result.fix_offered and result.fix %}
+      <div class="section-label">
+        <span class="tag tag-fixed">Fix (re-proved, nothing broke)</span>
       </div>
 
-    {% else %}{# expert #}
-      <div class="fix-box">
+      {% if level == 'normal' %}
         <div class="fix-explanation">{{ result.fix.explanation }}</div>
-        <div class="fix-code">{{ result.fix.fixed_code }}</div>
+        <div class="fix-box">
+          <div class="fix-code">{{ result.fix.fixed_code }}</div>
+        </div>
+      {% else %}{# expert #}
+        <div class="fix-box">
+          <div class="fix-explanation">{{ result.fix.explanation }}</div>
+          <div class="fix-code">{{ result.fix.fixed_code }}</div>
+        </div>
+      {% endif %}
+
+      {# ---------- TEACH (one notch up, so you need GAP less) ---------- #}
+      {% if result.fix.lesson %}
+      <div class="lesson-box">
+        <div class="lesson-label">Learn it</div>
+        <div class="lesson-text">{{ result.fix.lesson }}</div>
       </div>
+      {% endif %}
+
+      {# ---------- ACCEPT / REJECT (seed of the across-time loop) ---------- #}
+      {% if result.fix_id %}
+      <form method="POST" action="/decide" class="decide-row">
+        <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
+        <button type="submit" name="choice" value="accept" class="btn-decide accept">
+          I'll take this fix
+        </button>
+        <button type="submit" name="choice" value="reject" class="btn-decide reject">
+          Not this one
+        </button>
+      </form>
+      {% endif %}
+
+    {% elif result.proven %}
+      <div class="section-label">
+        <span class="tag tag-withheld">Fix withheld</span>
+      </div>
+      <div class="notes-text">{{ result.notes }}</div>
     {% endif %}
 
-    {# ---------- TEACH (one notch up, so you need GAP less) ---------- #}
-    {% if result.fix.lesson %}
-    <div class="lesson-box">
-      <div class="lesson-label">Learn it</div>
-      <div class="lesson-text">{{ result.fix.lesson }}</div>
-    </div>
-    {% endif %}
-
-    {# ---------- ACCEPT / REJECT (seed of the across-time loop) ---------- #}
-    {% if result.fix_id %}
-    <form method="POST" action="/decide" class="decide-row">
-      <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
-      <button type="submit" name="choice" value="accept" class="btn-decide accept">
-        I'll take this fix
-      </button>
-      <button type="submit" name="choice" value="reject" class="btn-decide reject">
-        Not this one
-      </button>
-    </form>
-    {% endif %}
-
-  {% elif result.proven %}
-    <div class="section-label">
-      <span class="tag tag-withheld">Fix withheld</span>
-    </div>
-    <div class="notes-text">{{ result.notes }}</div>
   {% endif %}
 
   {# ---------- CAVEAT ---------- #}

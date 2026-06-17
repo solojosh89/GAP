@@ -62,6 +62,14 @@ class StubEngine(Engine):
                 "The success number can say '5 migrated' while moving 0 - trust it and "
                 "delete your backup, and the skipped rows are gone."
             ),
+            plain=(
+                "Your code says it saved 5 things - but it really only saved 2. "
+                "It's counting everything it looked at, not the ones that actually saved."
+            ),
+            analogy=(
+                "Like movers yelling \"moved 5 boxes!\" after counting the boxes they "
+                "picked up - not the ones that actually made it onto the truck."
+            ),
         )
 
     def prove(self, code: str, finding: Finding) -> Proof:
