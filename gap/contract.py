@@ -24,7 +24,9 @@ class Finding:
 @dataclass
 class Proof:
     """A self-contained script that DEMONSTRATES the finding by running."""
-    script: str             # python source; prints BUG_PRESENT or BUG_ABSENT
+    script: str             # source; prints BUG_PRESENT or BUG_ABSENT
+    language: str = "python"  # which runtime runs it (python | node | ...). The
+                              # pipeline routes to the matching runner (see gap/runners.py).
 
 
 @dataclass
