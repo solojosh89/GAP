@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAP - Guided Architectural Practice</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #f8fafc;
+    }
+    .header h1 span { color: #60a5fa; }
+    .header p {
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: #94a3b8;
+      max-width: 480px;
+    }
+
+    .card {
+      background: #1e2230;
+      border: 1px solid #2d3448;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 680px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    /* File drop area */
+    .file-area {
+      border: 2px dashed #2d3448;
+      border-radius: 8px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+    .file-area:hover, .file-area.has-file {
+      border-color: #60a5fa;
+      background: #1a2236;
+    }
+    .file-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .file-area .icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .file-area .label {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    .file-area .label strong { color: #60a5fa; }
+    #file-name {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #60a5fa;
+      font-family: monospace;
+    }
+
+    /* Level dial */
+    .level-row {
+      display: flex;
+      gap: 0;
+      margin-top: 24px;
+      border: 1px solid #2d3448;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .level-row label {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      color: #64748b;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+    .level-row input[type="radio"] { display: none; }
+    .level-row input[type="radio"]:checked + label {
+      background: #60a5fa;
+      color: #0f1117;
+      font-weight: 600;
+    }
+    .level-row label:hover { background: #2d3448; color: #e2e8f0; }
+    .level-note {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: #475569;
+    }
+
+    /* Submit */
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 13px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .btn:active { background: #1e40af; }
+
+    /* Error */
+    .error-banner {
+      background: #2d1b1b;
+      border: 1px solid #7f1d1d;
+      color: #fca5a5;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+    }
+
+    /* Results */
+    .result-file {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-bottom: 16px;
+      font-family: monospace;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .tag-proven { background: #14532d; color: #86efac; }
+    .tag-unproven { background: #422006; color: #fcd34d; }
+    .tag-fixed { background: #1e3a5f; color: #93c5fd; }
+    .tag-withheld { background: #2d1b1b; color: #fca5a5; }
+
+    .problem-text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin: 12px 0 8px;
+      line-height: 1.4;
+    }
+    .why-text {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #475569;
+      margin: 24px 0 8px;
+    }
+
+    .proof-detail {
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: #0d1117;
+      border: 1px solid #2d3448;
+      border-radius: 6px;
+      padding: 12px 14px;
+      color: #86efac;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .proof-detail.unproven { color: #fcd34d; }
+
+    details {
+      margin-top: 8px;
+    }
+    details summary {
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: #475569;
+      user-select: none;
+    }
+    details summary:hover { color: #94a3b8; }
+    details pre {
+      margin-top: 8px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      background: #0d1117;
+      border: 1px solid #2d3448;
+      border-radius: 6px;
+      padding: 12px 14px;
+      color: #c0caf5;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-x: auto;
+    }
+
+    .fix-box {
+      background: #0d1117;
+      border: 1px solid #1e3a5f;
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .fix-explanation {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .fix-code {
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: #c0caf5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .notes-text {
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+
+    .caveat {
+      font-size: 0.8rem;
+      color: #475569;
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #2d3448;
+    }
+
+    .stub-notice {
+      background: #1c1a2e;
+      border: 1px solid #312e6b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: #818cf8;
+      text-align: center;
+      max-width: 680px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>GAP</span> - Guided Architectural Practice</h1>
+  <p>Drop your code. Get one real problem, proved by running it, with a fix.</p>
+</div>
+
+{% if error %}
+<div class="error-banner" style="max-width:680px;width:100%">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+  <h2>Submit code</h2>
+  <form method="POST" enctype="multipart/form-data" id="gap-form">
+
+    <div class="file-area" id="drop-area">
+      <input type="file" name="code_file" id="code-input" accept=".py">
+      <div class="icon">&#128196;</div>
+      <div class="label">
+        <strong>Click to choose</strong> a Python file
+      </div>
+      <div id="file-name"></div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div style="font-size:0.85rem;color:#64748b;margin-bottom:10px">
+        How should GAP explain it to you?
+      </div>
+      <div class="level-row">
+        <input type="radio" name="level" id="lvl-simple" value="simple"
+               {% if level == 'simple' %}checked{% endif %}>
+        <label for="lvl-simple">Simple</label>
+
+        <input type="radio" name="level" id="lvl-normal" value="normal"
+               {% if level == 'normal' %}checked{% endif %}>
+        <label for="lvl-normal">Normal</label>
+
+        <input type="radio" name="level" id="lvl-expert" value="expert"
+               {% if level == 'expert' %}checked{% endif %}>
+        <label for="lvl-expert">Expert</label>
+      </div>
+      <div class="level-note">
+        This only changes how GAP phrases the result - not what it finds or how hard it judges.
+      </div>
+    </div>
+
+    <button type="submit" class="btn">Run GAP</button>
+  </form>
+</div>
+
+{% if result %}
+<div class="card">
+  {% if filename %}
+  <div class="result-file">{{ filename }}</div>
+  {% endif %}
+
+  {# ---------- PROBLEM ---------- #}
+  <span class="tag {% if result.proven %}tag-proven{% else %}tag-unproven{% endif %}">
+    {% if result.proven %}Proved{% else %}Flagged (unproved){% endif %}
+  </span>
+
+  <div class="problem-text">{{ result.finding.problem }}</div>
+
+  {% if result.finding.why_it_matters %}
+  <div class="why-text">{{ result.finding.why_it_matters }}</div>
+  {% endif %}
+
+  {# ---------- PROOF ---------- #}
+  {% if level in ['normal', 'expert'] %}
+  <div class="section-label">Proof output</div>
+  <div class="proof-detail {% if not result.proven %}unproven{% endif %}">{{ result.proof_detail }}</div>
+  {% endif %}
+
+  {% if level == 'expert' and result.proven %}
+  <details>
+    <summary>Show proof script</summary>
+    <pre>{{ result.finding.problem }}</pre>
+  </details>
+  {% endif %}
+
+  {# ---------- FIX ---------- #}
+  {% if result.fix_offered and result.fix %}
+    <div class="section-label">
+      <span class="tag tag-fixed">Fix (re-proved, nothing broke)</span>
+    </div>
+
+    {% if level == 'simple' %}
+      <div class="why-text">{{ result.fix.explanation }}</div>
+
+    {% elif level == 'normal' %}
+      <div class="fix-explanation">{{ result.fix.explanation }}</div>
+      <div class="fix-box">
+        <div class="fix-code">{{ result.fix.fixed_code }}</div>
+      </div>
+
+    {% else %}{# expert #}
+      <div class="fix-box">
+        <div class="fix-explanation">{{ result.fix.explanation }}</div>
+        <div class="fix-code">{{ result.fix.fixed_code }}</div>
+      </div>
+    {% endif %}
+
+  {% elif result.proven %}
+    <div class="section-label">
+      <span class="tag tag-withheld">Fix withheld</span>
+    </div>
+    <div class="notes-text">{{ result.notes }}</div>
+  {% endif %}
+
+  {# ---------- CAVEAT ---------- #}
+  <div class="caveat">
+    There may be more problems - this shows one. Never assume "all clear".
+  </div>
+</div>
+{% endif %}
+
+<div class="stub-notice">
+  Engine: STUB (demo only -- runs the bundled migration example).
+  Real Claude-backed engine plugs in via the same interface when API access is ready.
+</div>
+
+<script>
+  const input = document.getElementById('code-input');
+  const label = document.getElementById('file-name');
+  input.addEventListener('change', () => {
+    label.textContent = input.files[0]?.name || '';
+  });
+</script>
+
+</body>
+</html>

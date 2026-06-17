@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS outcome (
 
 class Store:
     def __init__(self, path: str = ":memory:"):
-        self.conn = sqlite3.connect(path)
+        self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.executescript(SCHEMA)
         self.conn.commit()
 
