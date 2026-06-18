@@ -29,12 +29,13 @@ class Outcome:
     sweep: Optional[Sweep] = None  # the standing 'what aren't we asking?' gate
 
 
-# Do-no-harm check: after the fix, the code must still do its basic job.
+# Do-no-harm check: after the fix, the code must at least still import/compile
+# cleanly — this catches a fix that breaks the file outright. It is a LIGHT, GENERIC
+# check (honest limit): combined with the re-proof (the bug is gone), it is the
+# Floor-1 do-no-harm floor. A per-finding BEHAVIOURAL smoke — assert the intended
+# contract still holds on in-domain inputs — is the next improvement.
 SMOKE = (
     "import target\n"
-    "d = {}\n"
-    "n = target.migrate([(1, 'x')], d)\n"
-    "assert n == 1 and d == {1: 'x'}, 'smoke failed'\n"
     "print('GAP_SMOKE:OK')\n"
 )
 
@@ -66,6 +67,16 @@ def run(code: str, language: str, engine: Engine, store: Store,
 
     # 2) PROVE it by running a demonstration against the original code.
     proof = engine.prove(code, finding)
+
+    # Mechanical anti-inlining gate: a proof that does not IMPORT the submitted code
+    # proves nothing about it (and silently breaks the fix re-proof, which swaps
+    # target.py). Reject it rather than trust a self-referential demonstration.
+    if "target" not in proof.script:
+        store.add_proof(finding_id, proof.script, False)
+        return Outcome(finding, False, "(proof did not import the submitted code)", False, None,
+                       "Proof rejected: it did not import `target`, so it tested a copy, "
+                       "not your actual code — that proves nothing.", sweep=sweep)
+
     workdir = tempfile.mkdtemp(prefix="gap_")
     try:
         _write(workdir, "target.py", code)
@@ -79,6 +90,16 @@ def run(code: str, language: str, engine: Engine, store: Store,
             return Outcome(finding, False, _detail(r1), False, None,
                            "Could not prove the problem by running it — flagged, not claimed.",
                            sweep=sweep)
+
+        # 2b) ADJUDICATION GATE. A proof that RAN is necessary but not sufficient: the
+        # engine can "prove" an out-of-domain crash or a design opinion. A skeptical
+        # second pass rejects those before they ever reach the user. (No-op for engines
+        # that don't override adjudicate, e.g. the stub.)
+        valid, reason = engine.adjudicate(code, finding, proof.script, r1.stdout)
+        if not valid:
+            return Outcome(finding, False, f"adjudicator rejected: {reason}"[:200], False, None,
+                           "Proof rejected by the adjudication gate — out-of-domain input or design "
+                           "opinion, not a real defect on realistic input.", sweep=sweep)
 
         # 3) FIX, then RE-PROVE against the fixed code, then SMOKE-check for harm.
         fix = engine.fix(code, finding)

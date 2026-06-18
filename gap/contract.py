@@ -19,6 +19,13 @@ class Finding:
     rank: int               # 1 = most dangerous; the pipeline acts on the top one only
     confidence: str         # "high" | "medium" | "low" | "none"
     why_it_matters: str = ""
+    # The code's EVIDENT contract, inferred from its name, structure, and docstring.
+    # A finding is only legitimate if it shows behaviour that VIOLATES this intent on
+    # realistic in-domain inputs — not behaviour the engine personally dislikes, and
+    # not a crash forced by feeding out-of-domain garbage. This is the contract gate:
+    # it stops the engine flagging deliberate defensive behaviour (e.g. a function
+    # that returns a safe default on purpose) as if it were a defect.
+    intent: str = ""
     # Vibe-coder tier (Simple): ONE plain sentence with no jargon, plus a homely
     # analogy. NEVER shows function names, line numbers, proof markers, or code.
     plain: str = ""

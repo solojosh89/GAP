@@ -42,19 +42,34 @@ behaviour in production months later.
 
 {PROVE_DONT_ASSERT}
 
-Rank by danger (1 = act on this first). Prefer problems that live in pure,
-extractable logic (they can be proven by running) over problems that need a live
-DB / network / framework (those can only be flagged). If you genuinely find no
-provable problem, return confidence 'none' and say plainly that you did not.
+THE CONTRACT GATE — read this before flagging anything:
+First, infer the code's EVIDENT INTENT (its contract) from its name, structure, and
+any docstring, and state it in the `intent` field. Then a problem is legitimate ONLY
+if it VIOLATES that intent on realistic, in-domain inputs. Specifically:
+- Do NOT flag DELIBERATE behaviour as a bug. If a function clearly chooses a safe
+  default on purpose (e.g. `safe_divide` that returns 0.0 when the divisor is 0, with
+  an explicit guard), that IS its intent — disagreeing with the design choice is not
+  a bug. Returning the documented/evident value is correct by definition.
+- Do NOT manufacture a failure by feeding OUT-OF-DOMAIN garbage. A numeric `clamp`
+  crashing on a string input is not a defect — strings are outside its domain.
+- A real bug is a contradiction between what the code EVIDENTLY MEANS to do and what
+  it ACTUALLY does on inputs it is meant to handle (e.g. a function named is_even
+  that returns True for odd numbers; a count that claims successes but counts attempts).
+If the only thing you can find is a design opinion or an out-of-domain crash, that is
+NOT a finding — return confidence 'none'.
 
-Worked reference (the shape of a good finding):
-- "migrate() reports rows it TRIED to copy, not rows that landed; skipped rows
-  are still counted" — a count that lies, leading the user to trust it and delete
-  a backup. High danger, provable by running.
-- "analyzeEmotionalPatterns divides by a sentinel baseline of 1 when there is no
-  neutral-mood data, so the multiplier becomes the raw dollar average (e.g. 175x)"
-  — a fabricated magnitude shown as a high-risk diagnosis. Provable by running the
-  extracted pure function."""
+MOST CODE YOU REVIEW IS CORRECT. Returning confidence 'none' is a SUCCESS and the
+right answer for clean code — it is NOT a failure or a cop-out. Never invent a finding
+to seem useful. A false alarm is worse than saying "nothing provable here."
+
+Rank by danger (1 = act on this first). Prefer problems in pure, extractable logic
+(provable by running) over ones needing a live DB / network / framework (flag-only).
+
+Worked reference (the shape of a good finding — all are intent violations on in-domain input):
+- "migrate() reports rows it TRIED to copy, not rows that landed; skipped rows are
+  still counted" — intent is to count successful inserts; it counts attempts. Provable.
+- "is_even(n) returns True for odd numbers" — name promises even-check; behaviour is
+  the opposite. Provable on ordinary integers."""
 
 PROVE_SYSTEM = f"""You are GAP's proof engine. Write a SELF-CONTAINED script that
 DEMONSTRATES the given finding by running, with no expertise required to read the
@@ -65,12 +80,46 @@ verdict.
 Rules for the script:
 - It must print exactly one of "{BUG_PRESENT}" or "{BUG_ABSENT}" (plus a short
   human detail), based on observed behaviour — never on your assertion.
-- It must exercise the REAL code under test. For a plain module, import it as the
-  target. For a framework file (React/Vue/etc.), EXTRACT the pure function under
-  test VERBATIM into the script and call it directly — do not depend on a DOM or
-  framework runtime.
+- CRITICAL: you MUST import the submitted code and call it — `import target` (python)
+  or `from target import NAME`. Do NOT copy, paste, or redefine the function inside
+  your script. The harness swaps `target.py` between the ORIGINAL and the FIXED code
+  to re-check the fix; if you inline a copy, your proof tests the copy, not the real
+  code, the fix check becomes meaningless, and the proof is rejected. (Node: the
+  submitted code is written to `target.js` — `const t = require('./target')`.)
+- Use REALISTIC, IN-DOMAIN inputs only. The demonstration must show behaviour that
+  contradicts the code's evident intent — NOT a crash you forced with out-of-domain
+  garbage, and NOT behaviour you merely consider suboptimal. If your only "proof"
+  needs an input the function was never meant to handle, print "{BUG_ABSENT}".
+- Only if a framework file genuinely CANNOT be imported may you extract the pure
+  function verbatim — and say so. For plain modules, importing is mandatory.
 - Choose `language` = the language the code is written in (python | node).
 - Keep it deterministic and fast (well under 10s, no network, no real DB)."""
+
+ADJUDICATE_SYSTEM = f"""You are GAP's adjudicator — a skeptical reviewer whose JOB is
+to REJECT weak findings. A proof has already run and shown a "bug". Your call: is it a
+GENUINE defect, or an artefact that should never reach the user?
+
+{PROVE_DONT_ASSERT}
+
+Answer INVALID (reject) if ANY of these is true:
+- the proof used OUT-OF-DOMAIN inputs the function was never meant to handle
+  (e.g. strings passed to a numeric add(); low > high invalid bounds to clamp();
+  None where a real value is required),
+- the flagged behaviour is the code's DELIBERATE, evident intent (e.g. a function
+  that returns a safe default on purpose),
+- it is a matter of design opinion, style, or a hypothetical, not wrong behaviour on
+  realistic input.
+
+Answer VALID (approve) if the proof shows the code doing something that CONTRADICTS
+its evident intent on REALISTIC, in-domain inputs (e.g. is_even returns True for 3;
+a 'rows migrated' count that overcounts on ordinary rows). These are real bugs —
+approve them with confidence.
+
+Decide on the merits, not a quota. Answer INVALID only when the proof clearly matches
+one of the three artefact patterns above. Do NOT reject a genuine defect out of excess
+caution, and do NOT approve an artefact to seem helpful. A clear contract violation on
+ordinary input is always VALID; an out-of-domain crash or design opinion is always
+INVALID."""
 
 FIX_SYSTEM = f"""You are GAP's fix engine. Produce the MINIMAL change that removes
 the proven problem and breaks nothing else (Chesterton's Fence on the user's code).
@@ -88,12 +137,13 @@ Return three things:
 _FINDING_SCHEMA = {
     "type": "object",
     "properties": {
+        "intent": {"type": "string"},
         "problem": {"type": "string"},
         "rank": {"type": "integer"},
         "confidence": {"type": "string", "enum": ["high", "medium", "low", "none"]},
         "why_it_matters": {"type": "string"},
     },
-    "required": ["problem", "rank", "confidence", "why_it_matters"],
+    "required": ["intent", "problem", "rank", "confidence", "why_it_matters"],
     "additionalProperties": False,
 }
 
@@ -148,7 +198,8 @@ class RealEngine(Engine):
     def find(self, code: str, language: str) -> Finding:
         d = self._ask(FIND_SYSTEM, f"Language: {language}\n\n```\n{code}\n```", _FINDING_SCHEMA)
         return Finding(problem=d["problem"], rank=d["rank"],
-                       confidence=d["confidence"], why_it_matters=d["why_it_matters"])
+                       confidence=d["confidence"], why_it_matters=d["why_it_matters"],
+                       intent=d.get("intent", ""))
 
     def prove(self, code: str, finding: Finding) -> Proof:
         user = (f"Finding: {finding.problem}\n\nCode under test:\n```\n{code}\n```\n\n"

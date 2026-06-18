@@ -27,6 +27,16 @@ class Engine:
         only FLAG, not PROVE, for this code. Default: nothing extra to disclose."""
         return []
 
+    def adjudicate(self, code: str, finding: Finding, proof_script: str, proof_output: str):
+        """Skeptical second pass, run AFTER a proof shows the bug. Is this a GENUINE
+        defect (intent violation on in-domain input), or an artefact (out-of-domain
+        crash / design opinion)? Returns (is_valid, reason).
+
+        Default: approve. A weak engine (the stub) only proves what it truly knows,
+        so there is nothing to adjudicate. The real engine overrides this to reject
+        the over-eager findings prompt rules alone cannot stop."""
+        return True, "no adjudicator (default approve)"
+
 
 class StubEngine(Engine):
     """Hard-coded for examples/buggy_migrate.py (the 'count lie' bug).

@@ -6,6 +6,7 @@ No accounts, no scores, no dashboard.
     python app.py
 """
 from __future__ import annotations
+import os
 from pathlib import Path
 
 from flask import Flask, render_template, request
@@ -20,8 +21,27 @@ DB_PATH = str(BASE / "gap.db")
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024  # 100 KB -- no giant files
 
+
+def _make_engine():
+    """Real LLM engine when a key is configured (BYOK, used transiently, never
+    stored); StubEngine otherwise so the app still runs offline. Set:
+        GAP_LLM_API_KEY  (required for the real engine)
+        GAP_LLM_BASE_URL (default Kimi; e.g. Groq: https://api.groq.com/openai/v1)
+        GAP_LLM_MODEL    (e.g. openai/gpt-oss-120b on Groq)
+    """
+    if os.environ.get("GAP_LLM_API_KEY"):
+        from gap.openai_engine import OpenAICompatEngine
+        eng = OpenAICompatEngine()
+        print(f"[GAP] LLM engine active: {eng.model} @ {eng.base_url}")
+        return eng
+    print("[GAP] No GAP_LLM_API_KEY set -> StubEngine (offline demo: only the "
+          "migrate example is recognised). Set a key for the real find->prove->"
+          "adjudicate->fix engine.")
+    return StubEngine()
+
+
 _store = Store(DB_PATH)
-_engine = StubEngine()
+_engine = _make_engine()
 
 LEVELS = ["simple", "normal", "expert"]
 
