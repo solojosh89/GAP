@@ -9,6 +9,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+
 from flask import Flask, render_template, request
 
 from gap.engine import StubEngine
@@ -55,20 +58,35 @@ def index():
     if level not in LEVELS:
         level = "simple"
 
+    # Two ways in: upload a file, OR paste code straight into the box. A file (if
+    # present) wins; otherwise we treat the pasted text as the submission.
     uploaded = request.files.get("code_file")
-    if not uploaded or not uploaded.filename:
+    pasted = (request.form.get("code_text") or "").strip()
+    filename = "pasted.py"
+    if uploaded and uploaded.filename:
+        try:
+            code = uploaded.read().decode("utf-8", errors="replace")
+        except Exception:
+            return render_template("index.html", result=None, level=level,
+                                   error="Could not read that file. Is it a text file?")
+        filename = uploaded.filename
+    elif pasted:
+        code = pasted
+    else:
         return render_template("index.html", result=None, level=level,
-                               error="Please choose a file.")
+                               error="Paste some code, or choose a file.")
 
     try:
-        code = uploaded.read().decode("utf-8", errors="replace")
-    except Exception:
+        outcome = run(code, "python", _engine, _store, user_level=level)
+    except RuntimeError as e:
+        msg = str(e)
+        if "429" in msg:
+            return render_template("index.html", result=None, level=level,
+                                   error="The AI model is rate-limited. Wait 15 seconds and try again.")
         return render_template("index.html", result=None, level=level,
-                               error="Could not read that file. Is it a text file?")
-
-    outcome = run(code, "python", _engine, _store, user_level=level)
+                               error=f"Engine error: {msg[:200]}")
     return render_template("index.html", result=outcome, level=level,
-                           filename=uploaded.filename)
+                           filename=filename, original_code=code)
 
 
 @app.route("/decide", methods=["POST"])
@@ -89,9 +107,51 @@ def decide():
     accepted = 1 if choice == "accept" else -1
     ok = _store.set_fix_accepted(fix_id, accepted)
     decided = choice if ok else None
+    # Pass the fixed code (and original, for a real diff) back to the UI
+    fixed_code    = request.form.get("fixed_code", "")
+    lesson        = request.form.get("lesson", "")
+    explanation   = request.form.get("explanation", "")
+    original_code = request.form.get("original_code", "")
+    diff_html = _build_diff(original_code, fixed_code) if (decided == "accept" and fixed_code) else ""
     return render_template("index.html", result=None, level="simple",
-                           decided=decided)
+                           decided=decided,
+                           fixed_code=fixed_code,
+                           lesson=lesson,
+                           explanation=explanation,
+                           diff_html=diff_html)
+
+
+def _build_diff(original: str, fixed: str) -> str:
+    """Line-level diff, rendered as simple HTML spans. No external dependency —
+    difflib is stdlib. Unchanged lines are dimmed; only the changed lines stand
+    out, so the user's eye goes straight to what GAP actually touched."""
+    import difflib
+    import html as _html
+    out = []
+    sm = difflib.SequenceMatcher(None, original.splitlines(), fixed.splitlines())
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            for line in original.splitlines()[i1:i2]:
+                out.append(f'<div class="diff-line diff-equal">  {_html.escape(line)}</div>')
+        elif tag == "delete":
+            for line in original.splitlines()[i1:i2]:
+                out.append(f'<div class="diff-line diff-del">- {_html.escape(line)}</div>')
+        elif tag == "insert":
+            for line in fixed.splitlines()[j1:j2]:
+                out.append(f'<div class="diff-line diff-add">+ {_html.escape(line)}</div>')
+        elif tag == "replace":
+            for line in original.splitlines()[i1:i2]:
+                out.append(f'<div class="diff-line diff-del">- {_html.escape(line)}</div>')
+            for line in fixed.splitlines()[j1:j2]:
+                out.append(f'<div class="diff-line diff-add">+ {_html.escape(line)}</div>')
+    return "\n".join(out)
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # NOTE: use_reloader=False is deliberate here. On this Windows setup the
+    # stat-reloader was spuriously detecting changes in CPython's own stdlib
+    # files (threading.py, subprocess.py) and restarting mid-request, which
+    # surfaced as a silent reader-thread crash. Debug mode (tracebacks in
+    # browser) stays on; only the auto-restart-on-file-change is off.
+    # Restart manually (Ctrl+C, rerun) after editing source files.
+    app.run(debug=True, port=5000, use_reloader=False)

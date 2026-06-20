@@ -1,3 +1,4 @@
+
 """Run the GAP walking skeleton end-to-end on one file and print a plain result.
 
     python run_skeleton.py [path_to_python_file]
@@ -6,6 +7,9 @@ Defaults to the bundled example (the 'count lie' migration bug).
 """
 import os
 import sys
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from gap.engine import StubEngine
 from gap.pipeline import run

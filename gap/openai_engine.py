@@ -36,7 +36,9 @@ DEFAULT_MODEL = "kimi-k2-0711-preview"
 _FIND_KEYS = ('Respond with ONLY a JSON object, no prose: '
               '{"intent": string (the code\'s evident contract — what it is meant to do), '
               '"problem": string, "rank": integer, '
-              '"confidence": "high"|"medium"|"low"|"none", "why_it_matters": string}')
+              '"confidence": "high"|"medium"|"low"|"none", "why_it_matters": string, '
+              '"plain": string (one jargon-free sentence for a non-programmer), '
+              '"analogy": string (one short everyday comparison, or "" if confidence is none)}')
 _PROOF_KEYS = ('Respond with ONLY a JSON object, no prose: '
                '{"language": "python"|"node", "script": string}')
 _FIX_KEYS = ('Respond with ONLY a JSON object, no prose: '
@@ -124,6 +126,8 @@ class OpenAICompatEngine(Engine):
             confidence=d.get("confidence", "none"),
             why_it_matters=d.get("why_it_matters", ""),
             intent=d.get("intent", ""),
+            plain=d.get("plain", ""),
+            analogy=d.get("analogy", ""),
         )
 
     def prove(self, code: str, finding: Finding) -> Proof:
@@ -154,13 +158,26 @@ class OpenAICompatEngine(Engine):
             f"Proof output:\n{(proof_output or '')[:600]}\n\n"
             'Respond with ONLY a JSON object: {"verdict": "VALID"|"INVALID", "reason": string}'
         )
-        try:
-            d = self._parse(self._chat(ADJUDICATE_SYSTEM, user))
-        except Exception as e:
-            # Fail toward rejection: an unparseable adjudication is not an approval.
-            return False, f"adjudicator error ({e}) - rejected to stay safe"
-        valid = str(d.get("verdict", "INVALID")).strip().upper() == "VALID"
-        return valid, d.get("reason", "")
+        # One retry before we default to rejection.
+        # We distinguish two failure kinds:
+        #   (a) adjudicator replied INVALID  -> genuine rejection, honour it immediately.
+        #   (b) adjudicator errored (network, quota, parse) -> transient; retry once.
+        # This keeps fail-toward-rejection intact for real INVALID verdicts while
+        # stopping a 429 / timeout from silently killing a valid proven finding.
+        last_err = None
+        for attempt in range(2):
+            try:
+                d = self._parse(self._chat(ADJUDICATE_SYSTEM, user))
+                valid = str(d.get("verdict", "INVALID")).strip().upper() == "VALID"
+                return valid, d.get("reason", "")
+            except Exception as e:
+                last_err = e
+                if attempt == 0:
+                    # Brief pause before retry — clears most transient 429 bursts.
+                    time.sleep(6)
+        # Both attempts failed — reject, but label it as an error so the caller
+        # can distinguish "adjudicator said no" from "adjudicator never answered".
+        return False, f"adjudicator error after retry ({last_err}) - rejected to stay safe"
 
     def sweep(self, code: str, finding: Finding) -> list:
         if finding.confidence == "none":

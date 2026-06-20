@@ -122,6 +122,8 @@ def _run_windows(entry_name, workdir, timeout_s, memory_mb, max_processes) -> Ru
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",   # never crash the reader thread on a stray byte
         env=_minimal_env(),
     )
     # Assign immediately. CPython interpreter startup (tens of ms) far outlasts
@@ -175,6 +177,8 @@ def _run_posix(entry_name, workdir, timeout_s, memory_mb, max_processes) -> RunR
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",   # never crash the reader thread on a stray byte
         env=_minimal_env(),
         start_new_session=True,        # child leads its own process group
         preexec_fn=_limits,

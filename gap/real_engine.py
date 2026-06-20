@@ -71,6 +71,23 @@ Worked reference (the shape of a good finding — all are intent violations on i
 - "is_even(n) returns True for odd numbers" — name promises even-check; behaviour is
   the opposite. Provable on ordinary integers."""
 
+# Appended separately so the worked reference above stays focused on the technical
+# judgment. This is the Simple-tier requirement: ALWAYS produce both fields, even
+# though only the simple UI tier displays them — generating them is nearly free
+# and means tier selection never silently falls back to the technical sentence.
+FIND_SYSTEM += """
+
+ADDITIONALLY, always fill two more fields for non-technical readers — do this even
+when confidence is high and the finding is clearly technical:
+- "plain": ONE sentence, no jargon, no function names, no numbers, no code terms.
+  A non-programmer must understand exactly what could go wrong for them in practice.
+  Example: "Your interest calculation could multiply some customers' balances by 100x
+  instead of adding the small percentage you intended."
+- "analogy": one short, homely, everyday comparison that makes the plain sentence
+  click. Example: "It's like reading '5% off' as '500% off' at checkout."
+If confidence is "none" (no real finding), set plain to a one-sentence reassurance
+("I ran your code and could not find a provable problem in it.") and analogy to "" """
+
 PROVE_SYSTEM = f"""You are GAP's proof engine. Write a SELF-CONTAINED script that
 DEMONSTRATES the given finding by running, with no expertise required to read the
 verdict.
