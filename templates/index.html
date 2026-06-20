@@ -391,6 +391,23 @@
   .tier-btn.is-active { background: var(--proof); color: var(--ink); }
   .tierview[hidden] { display: none; }
 
+  .input-tabs { display: inline-flex; gap: 4px; margin-bottom: 14px; }
+  .input-tab {
+    padding: 7px 16px; border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text-dim); font-family: var(--font-sans); font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; border-radius: var(--radius-sm); transition: background .15s, color .15s, border-color .15s;
+  }
+  .input-tab:hover { color: var(--text); }
+  .input-tab.is-active { background: var(--proof); color: var(--ink); border-color: var(--proof); }
+  .input-pane[hidden] { display: none; }
+  .code-textarea {
+    width: 100%; min-height: 220px; resize: vertical; box-sizing: border-box;
+    padding: 14px; background: var(--ink); color: var(--text);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6;
+  }
+  .code-textarea:focus { outline: none; border-color: var(--proof-dim); }
+
   .error-banner {
     background: var(--danger-bg); border: 1px solid var(--danger-dim); color: var(--danger);
     padding: 13px 16px; border-radius: var(--radius-sm); font-size: 0.86rem; margin-bottom: 20px;
@@ -499,11 +516,23 @@
         <div class="card-label">Submit code</div>
         <form method="POST" enctype="multipart/form-data" id="gap-form">
 
-          <div class="file-area" id="drop-area">
-            <input type="file" name="code_file" id="code-input" accept=".py">
-            <div class="glyph">⌁</div>
-            <div class="label"><strong>Click to choose</strong> a Python file</div>
-            <div id="file-name"></div>
+          <div class="input-tabs" role="group" aria-label="How to give GAP your code">
+            <button type="button" class="input-tab is-active" data-mode="upload">Upload file</button>
+            <button type="button" class="input-tab" data-mode="paste">Paste code</button>
+          </div>
+
+          <div class="input-pane" data-mode="upload">
+            <div class="file-area" id="drop-area">
+              <input type="file" name="code_file" id="code-input" accept=".py">
+              <div class="glyph">⌁</div>
+              <div class="label"><strong>Click to choose</strong> a Python file</div>
+              <div id="file-name"></div>
+            </div>
+          </div>
+
+          <div class="input-pane" data-mode="paste" hidden>
+            <textarea name="code_text" id="code-text" class="code-textarea" spellcheck="false"
+                      placeholder="Paste your Python code here…"></textarea>
           </div>
 
           <div style="margin-top:22px">
@@ -708,10 +737,23 @@
   const input = document.getElementById('code-input');
   const label = document.getElementById('file-name');
   const dropArea = document.getElementById('drop-area');
+  const codeText = document.getElementById('code-text');
   input.addEventListener('change', () => {
     const f = input.files[0];
     label.textContent = f ? f.name : '';
     dropArea.classList.toggle('has-file', !!f);
+  });
+
+  // ---- input mode: upload a file OR paste code (one form, either works) ----
+  document.querySelectorAll('.input-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const mode = tab.getAttribute('data-mode');
+      document.querySelectorAll('.input-tab').forEach(t => t.classList.toggle('is-active', t === tab));
+      document.querySelectorAll('.input-pane').forEach(p => {
+        p.hidden = (p.getAttribute('data-mode') !== mode);
+      });
+      if (mode === 'paste') codeText.focus();
+    });
   });
 
   const form = document.getElementById('gap-form');
@@ -719,7 +761,8 @@
   const btnText = document.getElementById('btn-text');
   const TRACE = ['finding…', 'proving…', 'adjudicating…', 'almost done…'];
   form.addEventListener('submit', () => {
-    if (!input.files[0]) return;
+    const hasInput = input.files[0] || (codeText && codeText.value.trim());
+    if (!hasInput) return;
     submitBtn.disabled = true;
     submitBtn.classList.add('is-loading');
     let i = 0;
