@@ -52,7 +52,7 @@ def _detail(r: RunResult) -> str:
 
 
 def run(code: str, language: str, engine: Engine, store: Store,
-        user_level: str = "normal") -> Outcome:
+        user_level: str = "normal", smoke: Optional[str] = None) -> Outcome:
     user_id = store.add_user(user_level)
     submission_id = store.add_submission(user_id, code, language)
 
@@ -107,7 +107,10 @@ def run(code: str, language: str, engine: Engine, store: Store,
         r2 = run_script("proof.py", workdir)
         gone = r2.saw(BUG_ABSENT)
 
-        _write(workdir, "smoke.py", SMOKE)
+        # Per-sample behavioural smoke if provided (the eval passes one); else the
+        # light generic import-check. A behavioural smoke is what turns "the fix
+        # re-proved" into "the fix actually produces correct behaviour".
+        _write(workdir, "smoke.py", smoke or SMOKE)
         r3 = run_script("smoke.py", workdir)
         no_harm = r3.saw("GAP_SMOKE:OK")
 
