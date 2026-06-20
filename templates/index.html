@@ -1,624 +1,761 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAP - Guided Architectural Practice</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAP — Guided Architectural Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     THEME SYSTEM
+     Four complete palettes, switched purely via data-theme on <html>.
+     Every theme keeps the same semantic roles (proof/flag/danger/accent)
+     so the diff view, pills, and callouts stay legible and consistent
+     no matter which one is active — only the *mood* changes, not the
+     meaning of a color.
+     ============================================================ */
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f1117;
-      color: #e2e8f0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px 80px;
-    }
+  /* ---------- OBSIDIAN (default) — engineering-tool identity ---------- */
+  :root, [data-theme="obsidian"] {
+    --ink:        #0A0C10;
+    --panel:      #12151C;
+    --panel-2:    #171B24;
+    --line:       #232838;
+    --line-soft:  #1B2030;
+    --text:       #E7EAF0;
+    --text-dim:   #8A91A3;
+    --text-faint: #545B6E;
 
-    .header {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    .header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      color: #f8fafc;
-    }
-    .header h1 span { color: #60a5fa; }
-    .header p {
-      margin-top: 8px;
-      font-size: 0.95rem;
-      color: #94a3b8;
-      max-width: 480px;
-    }
+    --proof:      #3DDC84;
+    --proof-dim:  #1C3D2C;
+    --proof-bg:   #0F1D16;
 
-    .card {
-      background: #1e2230;
-      border: 1px solid #2d3448;
-      border-radius: 12px;
-      padding: 32px;
-      width: 100%;
-      max-width: 680px;
-      margin-bottom: 24px;
-    }
+    --flag:       #E8B84B;
+    --flag-dim:   #3A3018;
+    --flag-bg:    #1C170B;
 
-    .card h2 {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #64748b;
-      margin-bottom: 20px;
-    }
+    --danger:     #E8615A;
+    --danger-dim: #3A1D1B;
+    --danger-bg:  #1C0F0E;
 
-    /* File drop area */
-    .file-area {
-      border: 2px dashed #2d3448;
-      border-radius: 8px;
-      padding: 32px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      position: relative;
-    }
-    .file-area:hover, .file-area.has-file {
-      border-color: #60a5fa;
-      background: #1a2236;
-    }
-    .file-area input[type="file"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
-      height: 100%;
-    }
-    .file-area .icon {
-      font-size: 2rem;
-      margin-bottom: 8px;
-    }
-    .file-area .label {
-      color: #94a3b8;
-      font-size: 0.9rem;
-    }
-    .file-area .label strong { color: #60a5fa; }
-    #file-name {
-      margin-top: 8px;
-      font-size: 0.85rem;
-      color: #60a5fa;
-      font-family: monospace;
-    }
+    --accent:     #6E8BFF;
+    --bg-glow-1:  rgba(110,139,255,0.07);
+    --bg-glow-2:  rgba(61,220,132,0.04);
+  }
 
-    /* Level dial */
-    .level-row {
-      display: flex;
-      gap: 0;
-      margin-top: 24px;
-      border: 1px solid #2d3448;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .level-row label {
-      flex: 1;
-      text-align: center;
-      padding: 10px;
-      font-size: 0.875rem;
-      cursor: pointer;
-      color: #64748b;
-      transition: background 0.15s, color 0.15s;
-      user-select: none;
-    }
-    .level-row input[type="radio"] { display: none; }
-    .level-row input[type="radio"]:checked + label {
-      background: #60a5fa;
-      color: #0f1117;
-      font-weight: 600;
-    }
-    .level-row label:hover { background: #2d3448; color: #e2e8f0; }
-    .level-note {
-      margin-top: 8px;
-      font-size: 0.78rem;
-      color: #475569;
-    }
+  /* ---------- MIDNIGHT GOLD — gravitas, matches the GAP curriculum doc ---------- */
+  [data-theme="midnight-gold"] {
+    --ink:        #0D1419;
+    --panel:      #131C24;
+    --panel-2:    #182330;
+    --line:       #283544;
+    --line-soft:  #1E2A36;
+    --text:       #F0E9D8;
+    --text-dim:   #9CA8B5;
+    --text-faint: #5C6B7A;
 
-    /* Submit */
-    .btn {
-      display: block;
-      width: 100%;
-      margin-top: 24px;
-      padding: 13px;
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn:hover { background: #1d4ed8; }
-    .btn:active { background: #1e40af; }
+    --proof:      #C9963A;
+    --proof-dim:  #4A3A1C;
+    --proof-bg:   #1E1709;
 
-    /* Error */
-    .error-banner {
-      background: #2d1b1b;
-      border: 1px solid #7f1d1d;
-      color: #fca5a5;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      margin-bottom: 20px;
-    }
+    --flag:       #E0A23D;
+    --flag-dim:   #4A3818;
+    --flag-bg:    #1E170A;
 
-    /* Results */
-    .result-file {
-      font-size: 0.8rem;
-      color: #475569;
-      margin-bottom: 16px;
-      font-family: monospace;
-    }
+    --danger:     #D4685A;
+    --danger-dim: #4A2620;
+    --danger-bg:  #1E0F0C;
 
-    .tag {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .tag-proven { background: #14532d; color: #86efac; }
-    .tag-unproven { background: #422006; color: #fcd34d; }
-    .tag-fixed { background: #1e3a5f; color: #93c5fd; }
-    .tag-withheld { background: #2d1b1b; color: #fca5a5; }
+    --accent:     #7FA8C9;
+    --bg-glow-1:  rgba(201,150,58,0.08);
+    --bg-glow-2:  rgba(127,168,201,0.05);
+  }
 
-    .problem-text {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: #f1f5f9;
-      margin: 12px 0 8px;
-      line-height: 1.4;
-    }
+  /* ---------- TERMINAL — phosphor green, CRT-adjacent verification instrument ---------- */
+  [data-theme="terminal"] {
+    --ink:        #000000;
+    --panel:      #0A0F0A;
+    --panel-2:    #0F160F;
+    --line:       #1C3320;
+    --line-soft:  #142318;
+    --text:       #C8F5D0;
+    --text-dim:   #6FA87C;
+    --text-faint: #3D6B47;
 
-    /* Simple (vibe-coder) tier */
-    .plain-sentence {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #f1f5f9;
-      line-height: 1.5;
-    }
-    .analogy {
-      font-size: 1rem;
-      color: #cbd5e1;
-      line-height: 1.55;
-      margin-top: 14px;
-      padding-left: 14px;
-      border-left: 3px solid #60a5fa;
-      font-style: italic;
-    }
-    .simple-action {
-      font-size: 0.95rem;
-      color: #94a3b8;
-      margin-top: 22px;
-    }
-    .simple-details {
-      margin-top: 24px;
-      padding-top: 16px;
-      border-top: 1px solid #2d3448;
-    }
-    .simple-details summary {
-      cursor: pointer;
-      font-size: 0.85rem;
-      color: #64748b;
-      user-select: none;
-    }
-    .simple-details summary:hover { color: #94a3b8; }
-    .sweep-simple {
-      font-size: 0.9rem;
-      color: #94a3b8;
-      margin-top: 20px;
-      line-height: 1.5;
-    }
+    --proof:      #4EFF8B;
+    --proof-dim:  #1C4A2C;
+    --proof-bg:   #061C0D;
 
-    /* Sweep panel (the standing 'what aren't we asking?' gate) */
-    .sweep-box {
-      margin-top: 24px;
-      padding: 14px 16px;
-      background: #1a1f2e;
-      border: 1px solid #2d3448;
-      border-radius: 8px;
-    }
-    .sweep-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #fcd34d;
-      margin-bottom: 10px;
-    }
-    .sweep-list {
-      margin: 0;
-      padding-left: 18px;
-      color: #94a3b8;
-      font-size: 0.85rem;
-      line-height: 1.55;
-    }
-    .sweep-list li { margin-bottom: 6px; }
-    .why-text {
-      font-size: 0.9rem;
-      color: #94a3b8;
-      line-height: 1.5;
-    }
+    --flag:       #D9FF4E;
+    --flag-dim:   #4A4A18;
+    --flag-bg:    #1A1C06;
 
-    .section-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #475569;
-      margin: 24px 0 8px;
-    }
+    --danger:     #FF5C5C;
+    --danger-dim: #4A1C1C;
+    --danger-bg:  #1C0606;
 
-    .proof-detail {
-      font-family: monospace;
-      font-size: 0.85rem;
-      background: #0d1117;
-      border: 1px solid #2d3448;
-      border-radius: 6px;
-      padding: 12px 14px;
-      color: #86efac;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-    .proof-detail.unproven { color: #fcd34d; }
+    --accent:     #4EFF8B;
+    --bg-glow-1:  rgba(78,255,139,0.05);
+    --bg-glow-2:  rgba(78,255,139,0.03);
+  }
 
-    details {
-      margin-top: 8px;
-    }
-    details summary {
-      cursor: pointer;
-      font-size: 0.8rem;
-      color: #475569;
-      user-select: none;
-    }
-    details summary:hover { color: #94a3b8; }
-    details pre {
-      margin-top: 8px;
-      font-family: monospace;
-      font-size: 0.8rem;
-      background: #0d1117;
-      border: 1px solid #2d3448;
-      border-radius: 6px;
-      padding: 12px 14px;
-      color: #c0caf5;
-      white-space: pre-wrap;
-      word-break: break-all;
-      overflow-x: auto;
-    }
+  /* ---------- PORCELAIN — light theme, daytime / presentation use ---------- */
+  [data-theme="porcelain"] {
+    --ink:        #FAF7F2;
+    --panel:      #FFFFFF;
+    --panel-2:    #F3EEE6;
+    --line:       #E2DBCD;
+    --line-soft:  #ECE6DA;
+    --text:       #2A2520;
+    --text-dim:   #6B6356;
+    --text-faint: #A39B8C;
 
-    .fix-box {
-      background: #0d1117;
-      border: 1px solid #1e3a5f;
-      border-radius: 6px;
-      padding: 16px;
-    }
-    .fix-explanation {
-      font-size: 0.88rem;
-      color: #94a3b8;
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
-    .fix-code {
-      font-family: monospace;
-      font-size: 0.82rem;
-      color: #c0caf5;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
+    --proof:      #1E8A52;
+    --proof-dim:  #BFE5CE;
+    --proof-bg:   #EAF7EF;
 
-    .notes-text {
-      font-size: 0.875rem;
-      color: #64748b;
-    }
+    --flag:       #B8801E;
+    --flag-dim:   #EDDCB8;
+    --flag-bg:    #FBF2E0;
 
-    /* Teach one notch */
-    .lesson-box {
-      margin-top: 16px;
-      background: #14210f;
-      border: 1px solid #2f5320;
-      border-radius: 6px;
-      padding: 14px 16px;
-    }
-    .lesson-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #86efac;
-      margin-bottom: 6px;
-    }
-    .lesson-text {
-      font-size: 0.9rem;
-      color: #bbf7d0;
-      line-height: 1.5;
-    }
+    --danger:     #C2483D;
+    --danger-dim: #F0CFC9;
+    --danger-bg:  #FBEAE7;
 
-    /* Accept / reject */
-    .decide-row {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-    }
-    .btn-decide {
-      flex: 1;
-      padding: 11px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .btn-decide.accept { background: #166534; color: #dcfce7; }
-    .btn-decide.accept:hover { background: #15803d; }
-    .btn-decide.reject {
-      background: transparent;
-      color: #94a3b8;
-      border-color: #2d3448;
-    }
-    .btn-decide.reject:hover { background: #2d3448; color: #e2e8f0; }
+    --accent:     #B5562E;
+    --bg-glow-1:  rgba(181,86,46,0.06);
+    --bg-glow-2:  rgba(30,138,82,0.04);
+  }
 
-    /* Decision recorded */
-    .decided-banner {
-      background: #14210f;
-      border: 1px solid #2f5320;
-      color: #86efac;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      margin-bottom: 20px;
-    }
+  :root {
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, monospace;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
 
-    .caveat {
-      font-size: 0.8rem;
-      color: #475569;
-      text-align: center;
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px solid #2d3448;
-    }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  html[data-theme="porcelain"] { color-scheme: light; }
 
-    .stub-notice {
-      background: #1c1a2e;
-      border: 1px solid #312e6b;
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 0.8rem;
-      color: #818cf8;
-      text-align: center;
-      max-width: 680px;
-    }
-  </style>
+  body {
+    font-family: var(--font-sans);
+    background: var(--ink);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 50% -10%, var(--bg-glow-1), transparent),
+      radial-gradient(ellipse 700px 400px at 100% 100%, var(--bg-glow-2), transparent);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .25s, color .25s;
+  }
+
+  a { color: inherit; }
+
+  .shell { max-width: 1040px; margin: 0 auto; padding: 0 24px 96px; }
+
+  .topbar {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 28px 0 40px; border-bottom: 1px solid var(--line-soft);
+    margin-bottom: 40px; flex-wrap: wrap; gap: 12px;
+  }
+  .topbar .mark { display: flex; align-items: baseline; gap: 10px; }
+  .topbar .mark .glyph {
+    font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600;
+    color: var(--proof); background: var(--proof-bg); border: 1px solid var(--proof-dim);
+    border-radius: 5px; padding: 3px 7px; letter-spacing: 0.02em;
+  }
+  .topbar h1 { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .topbar .tagline { font-size: 0.82rem; color: var(--text-faint); font-family: var(--font-mono); }
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+
+  /* ---------- theme switcher ---------- */
+  .theme-switch {
+    display: flex; gap: 4px; padding: 3px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  }
+  .theme-dot {
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: border-color .15s, transform .15s;
+    position: relative; flex-shrink: 0;
+  }
+  .theme-dot:hover { transform: scale(1.1); }
+  .theme-dot.is-active { border-color: var(--text); }
+  .theme-dot[data-t="obsidian"] { background: linear-gradient(135deg, #0A0C10 50%, #3DDC84 50%); }
+  .theme-dot[data-t="midnight-gold"] { background: linear-gradient(135deg, #0D1419 50%, #C9963A 50%); }
+  .theme-dot[data-t="terminal"] { background: linear-gradient(135deg, #000000 50%, #4EFF8B 50%); }
+  .theme-dot[data-t="porcelain"] { background: linear-gradient(135deg, #FAF7F2 50%, #1E8A52 50%); border-color: var(--line); }
+
+  .layout { display: grid; grid-template-columns: 200px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; }
+    .rail { display: none; }
+  }
+
+  .rail { position: sticky; top: 28px; display: flex; flex-direction: column; gap: 2px; }
+  .rail .step {
+    font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-faint);
+    padding: 9px 0 9px 16px; border-left: 2px solid var(--line); position: relative;
+    transition: color .2s, border-color .2s;
+  }
+  .rail .step.is-active { color: var(--proof); border-left-color: var(--proof); }
+  .rail .step .n { color: var(--text-faint); margin-right: 6px; }
+  .rail .step.is-active .n { color: var(--proof); }
+
+  .content { min-width: 0; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 28px; margin-bottom: 20px; transition: background-color .25s, border-color .25s;
+  }
+  .card-label {
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-faint); margin-bottom: 18px;
+  }
+
+  .file-area {
+    border: 1.5px dashed var(--line); border-radius: var(--radius-sm); padding: 28px;
+    text-align: center; cursor: pointer; position: relative;
+    transition: border-color .15s, background .15s;
+  }
+  .file-area:hover, .file-area.has-file { border-color: var(--accent); background: var(--bg-glow-1); }
+  .file-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .file-area .glyph { font-family: var(--font-mono); font-size: 1.3rem; color: var(--text-faint); margin-bottom: 8px; }
+  .file-area .label { color: var(--text-dim); font-size: 0.88rem; }
+  .file-area .label strong { color: var(--accent); font-weight: 600; }
+  #file-name { margin-top: 10px; font-size: 0.82rem; color: var(--proof); font-family: var(--font-mono); }
+
+  .level-row {
+    display: flex; gap: 0; margin-top: 22px; border: 1px solid var(--line);
+    border-radius: var(--radius-sm); overflow: hidden;
+  }
+  .level-row label {
+    flex: 1; text-align: center; padding: 10px; font-size: 0.85rem; cursor: pointer;
+    color: var(--text-faint); transition: background .15s, color .15s; user-select: none;
+    font-family: var(--font-mono);
+  }
+  .level-row input[type="radio"] { display: none; }
+  .level-row input[type="radio"]:checked + label { background: var(--accent); color: var(--ink); font-weight: 600; }
+  .level-row label:hover { background: var(--panel-2); color: var(--text); }
+  .level-note { margin-top: 8px; font-size: 0.76rem; color: var(--text-faint); }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    width: 100%; margin-top: 22px; padding: 13px; background: var(--proof); color: var(--ink);
+    border: none; border-radius: var(--radius-sm); font-size: 0.92rem; font-weight: 600;
+    font-family: var(--font-sans); cursor: pointer; transition: background .15s, opacity .15s, filter .15s;
+  }
+  .btn:hover { filter: brightness(1.12); }
+  .btn:disabled { opacity: 0.7; cursor: progress; }
+  .btn .trace { font-family: var(--font-mono); font-size: 0.85rem; }
+  .spinner {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(0,0,0,0.25); border-top-color: var(--ink);
+    animation: spin .7s linear infinite; flex-shrink: 0; display: none;
+  }
+  .btn.is-loading .spinner { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .pill-proven  { background: var(--proof-bg); color: var(--proof); border: 1px solid var(--proof-dim); }
+  .pill-proven::before { background: var(--proof); }
+  .pill-flag    { background: var(--flag-bg); color: var(--flag); border: 1px solid var(--flag-dim); }
+  .pill-flag::before { background: var(--flag); }
+  .pill-fixed   { background: var(--bg-glow-1); color: var(--accent); border: 1px solid var(--line); }
+  .pill-fixed::before { background: var(--accent); }
+  .pill-withheld{ background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-dim); }
+  .pill-withheld::before { background: var(--danger); }
+
+  .result-file {
+    font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-faint);
+    margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft);
+  }
+  .problem-text { font-size: 1.15rem; font-weight: 600; color: var(--text); margin: 14px 0 8px; line-height: 1.45; }
+  .why-text { font-size: 0.92rem; color: var(--text-dim); line-height: 1.6; margin-top: 4px; }
+
+  .plain-sentence { font-size: 1.25rem; font-weight: 600; color: var(--text); line-height: 1.5; }
+  .analogy {
+    font-size: 0.98rem; color: var(--text-dim); line-height: 1.6; margin-top: 16px;
+    padding: 14px 16px; background: var(--panel-2); border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent); font-style: italic;
+  }
+  .simple-action { font-size: 0.92rem; color: var(--text-dim); margin-top: 22px; }
+  .simple-details { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+  .simple-details summary {
+    cursor: pointer; font-size: 0.84rem; color: var(--text-faint); user-select: none; font-family: var(--font-mono);
+  }
+  .simple-details summary:hover { color: var(--text-dim); }
+
+  .section-label {
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--text-faint); margin: 22px 0 8px;
+    display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  }
+
+  .proof-detail {
+    font-family: var(--font-mono); font-size: 0.84rem; line-height: 1.6;
+    background: var(--ink); border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+    padding: 14px 16px; color: var(--proof); overflow-x: auto; white-space: pre-wrap;
+  }
+  .proof-detail.unproven { color: var(--flag); }
+
+  .fix-explanation { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 10px; line-height: 1.55; }
+  .fix-box { background: var(--ink); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
+  .fix-code {
+    font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.65; padding: 16px;
+    color: var(--text-dim); white-space: pre-wrap; overflow-x: auto;
+  }
+
+  .lesson-box {
+    margin-top: 14px; padding: 14px 16px; background: var(--bg-glow-1);
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+  }
+  .lesson-label {
+    font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--accent); margin-bottom: 6px;
+  }
+  .lesson-text { font-size: 0.88rem; color: var(--text-dim); line-height: 1.6; }
+
+  /* ---------- WITHHELD CALLOUT — point 1: must draw the eye, danger-coded ---------- */
+  .withheld-box {
+    margin-top: 18px; padding: 14px 16px;
+    background: var(--danger-bg); border: 1px solid var(--danger-dim);
+    border-left: 3px solid var(--danger);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .withheld-box .wico {
+    font-family: var(--font-mono); font-size: 0.95rem; color: var(--danger);
+    line-height: 1.4; flex-shrink: 0;
+  }
+  .withheld-box .wbody { flex: 1; }
+  .withheld-label {
+    font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--danger); margin-bottom: 4px;
+  }
+  .withheld-text { font-size: 0.88rem; color: var(--text); line-height: 1.55; }
+
+  .diff-box {
+    font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.7; background: var(--ink);
+    border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow-x: auto; margin-top: 4px;
+  }
+  .diff-line { padding: 1px 14px; white-space: pre; }
+  .diff-equal { color: var(--text-faint); }
+  .diff-del   { color: var(--danger); background: var(--danger-bg); }
+  .diff-add   { color: var(--proof); background: var(--proof-bg); }
+
+  .sweep-box {
+    margin-top: 22px; padding: 16px 18px; background: var(--flag-bg);
+    border: 1px solid var(--flag-dim); border-radius: var(--radius-sm);
+  }
+  .sweep-label {
+    font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--flag); margin-bottom: 10px;
+  }
+  .sweep-list { list-style: none; color: var(--text-dim); font-size: 0.86rem; line-height: 1.6; }
+  .sweep-list li { margin-bottom: 7px; padding-left: 16px; position: relative; }
+  .sweep-list li::before { content: '—'; position: absolute; left: 0; color: var(--text-faint); }
+
+  .caveat {
+    font-size: 0.8rem; color: var(--text-faint); text-align: center;
+    margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line-soft);
+  }
+
+  .decide-row { display: flex; gap: 10px; margin-top: 18px; }
+  .btn-decide {
+    flex: 1; padding: 11px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+    font-size: 0.86rem; font-weight: 600; cursor: pointer; font-family: var(--font-sans);
+    transition: background .15s, border-color .15s;
+  }
+  .btn-decide.accept { background: var(--proof); color: var(--ink); border-color: var(--proof); }
+  .btn-decide.accept:hover { filter: brightness(1.12); }
+  .btn-decide.reject { background: transparent; color: var(--text-dim); }
+  .btn-decide.reject:hover { background: var(--panel-2); color: var(--text); }
+
+  .tier-switch {
+    display: inline-flex; gap: 4px; margin-bottom: 20px; padding: 4px;
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  }
+  .tier-btn {
+    padding: 6px 16px; border: none; background: transparent; color: var(--text-dim);
+    font-family: var(--font-sans); font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    border-radius: 5px; text-transform: lowercase; transition: background .15s, color .15s;
+  }
+  .tier-btn:hover { color: var(--text); }
+  .tier-btn.is-active { background: var(--proof); color: var(--ink); }
+  .tierview[hidden] { display: none; }
+
+  .error-banner {
+    background: var(--danger-bg); border: 1px solid var(--danger-dim); color: var(--danger);
+    padding: 13px 16px; border-radius: var(--radius-sm); font-size: 0.86rem; margin-bottom: 20px;
+  }
+  .decided-banner {
+    background: var(--proof-bg); border: 1px solid var(--proof-dim); color: var(--proof);
+    padding: 13px 16px; border-radius: var(--radius-sm); font-size: 0.86rem; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .decided-banner.rejected { background: var(--panel-2); border-color: var(--line); color: var(--text-dim); }
+
+  .stub-notice {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 12px 16px; font-size: 0.78rem; color: var(--text-faint); text-align: center;
+    font-family: var(--font-mono); margin-top: 32px;
+  }
+
+  .copy-btn {
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-faint);
+    background: var(--panel-2); border: 1px solid var(--line); padding: 5px 10px;
+    border-radius: 5px; cursor: pointer; transition: color .15s, border-color .15s;
+  }
+  .copy-btn:hover { color: var(--proof); border-color: var(--proof-dim); }
+  .copy-btn.copied { color: var(--proof); border-color: var(--proof-dim); }
+
+  .fix-box-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid var(--line-soft);
+  }
+  .fix-box-head .fname { font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-faint); }
+</style>
 </head>
 <body>
 
-<div class="header">
-  <h1><span>GAP</span> - Guided Architectural Practice</h1>
-  <p>Drop your code. Get one real problem, proved by running it, with a fix.</p>
-</div>
+<div class="shell">
 
-{% if error %}
-<div class="error-banner" style="max-width:680px;width:100%">{{ error }}</div>
-{% endif %}
-
-{% if decided %}
-<div class="decided-banner" style="max-width:680px;width:100%">
-  {% if decided == 'accept' %}
-    Recorded: you took this fix. GAP keeps that so it can later check whether it held.
-  {% else %}
-    Recorded: you passed on this fix. That's a signal too - GAP keeps it.
-  {% endif %}
-</div>
-{% endif %}
-
-<div class="card">
-  <h2>Submit code</h2>
-  <form method="POST" enctype="multipart/form-data" id="gap-form">
-
-    <div class="file-area" id="drop-area">
-      <input type="file" name="code_file" id="code-input" accept=".py">
-      <div class="icon">&#128196;</div>
-      <div class="label">
-        <strong>Click to choose</strong> a Python file
-      </div>
-      <div id="file-name"></div>
+  <div class="topbar">
+    <div class="mark">
+      <span class="glyph">{ }</span>
+      <h1>GAP</h1>
     </div>
-
-    <div style="margin-top:24px">
-      <div style="font-size:0.85rem;color:#64748b;margin-bottom:10px">
-        How should GAP explain it to you?
-      </div>
-      <div class="level-row">
-        <input type="radio" name="level" id="lvl-simple" value="simple"
-               {% if level == 'simple' %}checked{% endif %}>
-        <label for="lvl-simple">Simple</label>
-
-        <input type="radio" name="level" id="lvl-normal" value="normal"
-               {% if level == 'normal' %}checked{% endif %}>
-        <label for="lvl-normal">Normal</label>
-
-        <input type="radio" name="level" id="lvl-expert" value="expert"
-               {% if level == 'expert' %}checked{% endif %}>
-        <label for="lvl-expert">Expert</label>
-      </div>
-      <div class="level-note">
-        This only changes how GAP phrases the result - not what it finds or how hard it judges.
+    <div class="topbar-right">
+      <div class="tagline">prove, never assert</div>
+      <div class="theme-switch" id="theme-switch" role="group" aria-label="Theme">
+        <div class="theme-dot" data-t="obsidian" title="Obsidian"></div>
+        <div class="theme-dot" data-t="midnight-gold" title="Midnight Gold"></div>
+        <div class="theme-dot" data-t="terminal" title="Terminal"></div>
+        <div class="theme-dot" data-t="porcelain" title="Porcelain"></div>
       </div>
     </div>
+  </div>
 
-    <button type="submit" class="btn">Run GAP</button>
-  </form>
-</div>
+  <div class="layout">
 
-{% if result %}
-<div class="card">
-  {% if filename %}
-  <div class="result-file">{{ filename }}</div>
-  {% endif %}
+    <div class="rail">
+      <div class="step {% if not result and not decided %}is-active{% endif %}"><span class="n">01</span>submit</div>
+      <div class="step {% if result %}is-active{% endif %}"><span class="n">02</span>find</div>
+      <div class="step {% if result and result.proven %}is-active{% endif %}"><span class="n">03</span>prove</div>
+      <div class="step {% if result and result.fix_offered %}is-active{% endif %}"><span class="n">04</span>fix</div>
+      <div class="step {% if decided %}is-active{% endif %}"><span class="n">05</span>record</div>
+    </div>
 
-  {# ============================================================= #}
-  {# SIMPLE = the vibe-coder tier: one plain sentence + a homely    #}
-  {# analogy + one safe choice. NO function names, lines, proof     #}
-  {# markers, or code. Everything technical hides behind a reveal.  #}
-  {# ============================================================= #}
-  {% if level == 'simple' %}
+    <div class="content">
 
-    <p class="plain-sentence">{{ result.finding.plain or result.finding.problem }}</p>
-    {% if result.proven and result.finding.analogy %}
-    <p class="analogy">{{ result.finding.analogy }}</p>
-    {% endif %}
+      {% if error %}
+      <div class="error-banner">{{ error }}</div>
+      {% endif %}
 
-    {% if result.fix_offered and result.fix_id %}
-      <p class="simple-action">Good news — I found a fix and already checked it doesn’t break anything.</p>
-      <form method="POST" action="/decide" class="decide-row">
-        <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
-        <button type="submit" name="choice" value="accept" class="btn-decide accept">Yes, fix it</button>
-        <button type="submit" name="choice" value="reject" class="btn-decide reject">Not now</button>
-      </form>
-    {% elif result.proven %}
-      <p class="simple-action">This one’s real, but I couldn’t fix it safely on my own — best to look at it yourself.</p>
-    {% endif %}
+      {% if decided %}
+      <div class="decided-banner {% if decided == 'reject' %}rejected{% endif %}">
+        {% if decided == 'accept' %}
+          ✓ Recorded — you took this fix. GAP keeps that so it can check later whether it held.
+        {% else %}
+          Recorded — you passed on this fix. That's a signal too, and GAP keeps it.
+        {% endif %}
+      </div>
 
-    {% if result.proven %}
-    <details class="simple-details">
-      <summary>Show me the details</summary>
-      <div class="why-text" style="margin-top:14px">{{ result.finding.problem }}</div>
-      <div class="section-label">Proof (I ran your code)</div>
-      <div class="proof-detail">{{ result.proof_detail }}</div>
-      {% if result.fix_offered and result.fix %}
-      <div class="section-label">The fix</div>
-      <div class="fix-box"><div class="fix-code">{{ result.fix.fixed_code }}</div></div>
-        {% if result.fix.lesson %}
+      {% if decided == 'accept' and fixed_code %}
+      <div class="card">
+        <div class="card-label">What changed</div>
+
+        {% if explanation %}
+        <div class="fix-explanation">{{ explanation }}</div>
+        {% endif %}
+
+        {% if diff_html %}
+        <div class="section-label">
+          <span>Diff</span>
+          <button class="copy-btn" type="button" data-copy-target="fixed-code-raw">copy fixed file</button>
+        </div>
+        <div class="diff-box">{{ diff_html | safe }}</div>
+        <pre id="fixed-code-raw" style="display:none">{{ fixed_code }}</pre>
+        {% endif %}
+
+        {% if lesson %}
         <div class="lesson-box">
-          <div class="lesson-label">Learn it</div>
-          <div class="lesson-text">{{ result.fix.lesson }}</div>
+          <div class="lesson-label">Remember next time</div>
+          <div class="lesson-text">{{ lesson }}</div>
         </div>
         {% endif %}
+      </div>
       {% endif %}
-    </details>
-    {% endif %}
+      {% endif %}
 
-  {# ============================================================= #}
-  {# NORMAL / EXPERT = developer tiers: full detail.                #}
-  {# ============================================================= #}
-  {% else %}
+      <div class="card">
+        <div class="card-label">Submit code</div>
+        <form method="POST" enctype="multipart/form-data" id="gap-form">
 
-    {# ---------- PROBLEM ---------- #}
-    <span class="tag {% if result.proven %}tag-proven{% else %}tag-unproven{% endif %}">
-      {% if result.proven %}Proved{% else %}Flagged (unproved){% endif %}
-    </span>
+          <div class="file-area" id="drop-area">
+            <input type="file" name="code_file" id="code-input" accept=".py">
+            <div class="glyph">⌁</div>
+            <div class="label"><strong>Click to choose</strong> a Python file</div>
+            <div id="file-name"></div>
+          </div>
 
-    <div class="problem-text">{{ result.finding.problem }}</div>
+          <div style="margin-top:22px">
+            <div style="font-size:0.84rem;color:var(--text-dim);margin-bottom:10px">
+              How should GAP explain it to you?
+            </div>
+            <div class="level-row">
+              <input type="radio" name="level" id="lvl-simple" value="simple" {% if level == 'simple' %}checked{% endif %}>
+              <label for="lvl-simple">simple</label>
+              <input type="radio" name="level" id="lvl-normal" value="normal" {% if level == 'normal' %}checked{% endif %}>
+              <label for="lvl-normal">normal</label>
+              <input type="radio" name="level" id="lvl-expert" value="expert" {% if level == 'expert' %}checked{% endif %}>
+              <label for="lvl-expert">expert</label>
+            </div>
+            <div class="level-note">This only changes how GAP phrases the result — not what it finds or how hard it judges.</div>
+          </div>
 
-    {% if result.finding.why_it_matters %}
-    <div class="why-text">{{ result.finding.why_it_matters }}</div>
-    {% endif %}
-
-    {# ---------- PROOF ---------- #}
-    <div class="section-label">Proof output</div>
-    <div class="proof-detail {% if not result.proven %}unproven{% endif %}">{{ result.proof_detail }}</div>
-
-    {# ---------- FIX ---------- #}
-    {% if result.fix_offered and result.fix %}
-      <div class="section-label">
-        <span class="tag tag-fixed">Fix (re-proved, nothing broke)</span>
+          <button type="submit" class="btn" id="submit-btn">
+            <span class="spinner"></span>
+            <span class="trace" id="btn-text">run gap</span>
+          </button>
+        </form>
       </div>
 
-      {% if level == 'normal' %}
-        <div class="fix-explanation">{{ result.fix.explanation }}</div>
-        <div class="fix-box">
-          <div class="fix-code">{{ result.fix.fixed_code }}</div>
+      {% if result %}
+      <div class="card">
+        {% if filename %}<div class="result-file">{{ filename }}</div>{% endif %}
+
+        {# ONE run, all tiers rendered. The dial switches the VIEW client-side only —
+           it never re-runs the engine (the level is display-only; re-running would
+           cost calls and could even disagree across tiers). #}
+        <div class="tier-switch" role="group" aria-label="Explanation level">
+          {% for t in ['simple', 'normal', 'expert'] %}
+          <button type="button" class="tier-btn {% if t == level %}is-active{% endif %}" data-tier="{{ t }}">{{ t }}</button>
+          {% endfor %}
         </div>
-      {% else %}{# expert #}
-        <div class="fix-box">
-          <div class="fix-explanation">{{ result.fix.explanation }}</div>
-          <div class="fix-code">{{ result.fix.fixed_code }}</div>
+
+        {% for tier in ['simple', 'normal', 'expert'] %}
+        <div class="tierview" data-tier="{{ tier }}" {% if tier != level %}hidden{% endif %}>
+
+        {% if tier == 'simple' %}
+
+          <p class="plain-sentence">{{ result.finding.plain or result.finding.problem }}</p>
+          {% if result.proven and result.finding.analogy %}
+          <p class="analogy">{{ result.finding.analogy }}</p>
+          {% endif %}
+
+          {% if result.fix_offered and result.fix_id %}
+            <p class="simple-action">Good news — I found a fix and already checked it doesn't break anything.</p>
+            <form method="POST" action="/decide" class="decide-row">
+              <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
+              <input type="hidden" name="fixed_code" value="{{ result.fix.fixed_code | e if result.fix else '' }}">
+              <input type="hidden" name="lesson" value="{{ result.fix.lesson | e if result.fix else '' }}">
+              <input type="hidden" name="explanation" value="{{ result.fix.explanation | e if result.fix else '' }}">
+              <input type="hidden" name="original_code" value="{{ original_code | e if original_code else '' }}">
+              <button type="submit" name="choice" value="accept" class="btn-decide accept">Yes, fix it</button>
+              <button type="submit" name="choice" value="reject" class="btn-decide reject">Not now</button>
+            </form>
+          {% elif result.proven %}
+            <p class="simple-action">This one's real, but I couldn't fix it safely on my own — best to look at it yourself.</p>
+            {% if result.notes %}
+            <div class="withheld-box">
+              <span class="wico">⚠</span>
+              <div class="wbody">
+                <div class="withheld-label">Fix withheld</div>
+                <div class="withheld-text">{{ result.notes }}</div>
+              </div>
+            </div>
+            {% endif %}
+          {% endif %}
+
+          {% if result.proven %}
+          <details class="simple-details">
+            <summary>Show me the details</summary>
+            <div class="why-text" style="margin-top:14px">{{ result.finding.problem }}</div>
+            <div class="section-label"><span>Proof (I ran your code)</span></div>
+            <div class="proof-detail">{{ result.proof_detail }}</div>
+          </details>
+          {% endif %}
+
+        {% else %}
+
+          <span class="pill {% if result.proven %}pill-proven{% else %}pill-flag{% endif %}">
+            {% if result.proven %}proved{% else %}flagged · unproved{% endif %}
+          </span>
+
+          <div class="problem-text">{{ result.finding.problem }}</div>
+          {% if result.finding.why_it_matters %}
+          <div class="why-text">{{ result.finding.why_it_matters }}</div>
+          {% endif %}
+
+          <div class="section-label"><span>Proof output</span></div>
+          <div class="proof-detail {% if not result.proven %}unproven{% endif %}">{{ result.proof_detail }}</div>
+
+          {% if result.fix_offered and result.fix %}
+            <div class="section-label"><span class="pill pill-fixed">fix · re-proved, nothing broke</span></div>
+
+            <div class="fix-explanation">{{ result.fix.explanation }}</div>
+            <div class="fix-box">
+              <div class="fix-box-head">
+                <span class="fname">fixed_code.py</span>
+                <button class="copy-btn" type="button" data-copy-target="result-fix-code-{{ tier }}">copy</button>
+              </div>
+              <div class="fix-code" id="result-fix-code-{{ tier }}">{{ result.fix.fixed_code }}</div>
+            </div>
+
+            {% if result.fix.lesson %}
+            <div class="lesson-box">
+              <div class="lesson-label">Learn it</div>
+              <div class="lesson-text">{{ result.fix.lesson }}</div>
+            </div>
+            {% endif %}
+
+            {% if result.fix_id %}
+            <form method="POST" action="/decide" class="decide-row">
+              <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
+              <input type="hidden" name="fixed_code" value="{{ result.fix.fixed_code | e }}">
+              <input type="hidden" name="lesson" value="{{ result.fix.lesson | e if result.fix.lesson else '' }}">
+              <input type="hidden" name="explanation" value="{{ result.fix.explanation | e if result.fix.explanation else '' }}">
+              <input type="hidden" name="original_code" value="{{ original_code | e if original_code else '' }}">
+              <button type="submit" name="choice" value="accept" class="btn-decide accept">I'll take this fix</button>
+              <button type="submit" name="choice" value="reject" class="btn-decide reject">Not this one</button>
+            </form>
+            {% endif %}
+
+          {% elif result.proven %}
+            <div class="section-label"><span class="pill pill-withheld">fix withheld</span></div>
+            <div class="withheld-box">
+              <span class="wico">⚠</span>
+              <div class="wbody">
+                <div class="withheld-label">Why I held back</div>
+                <div class="withheld-text">{{ result.notes }}</div>
+              </div>
+            </div>
+          {% endif %}
+
+        {% endif %}
+
+        {% if tier != 'simple' and result.sweep %}
+        <div class="sweep-box">
+          <div class="sweep-label">What I did NOT check — so you don't assume "all clear"</div>
+          <ul class="sweep-list">
+            {% if result.sweep.acted_on_one %}
+            <li>I showed the ONE most dangerous problem, not every problem. There may be more.</li>
+            {% endif %}
+            {% for note in result.sweep.boundary_notes %}
+            <li>{{ note }}</li>
+            {% endfor %}
+            {% if result.sweep.across_time_gap %}
+            <li>I can't yet tell whether this breaks months from now — the across-time check isn't built (a later floor).</li>
+            {% endif %}
+          </ul>
         </div>
-      {% endif %}
+        {% endif %}
 
-      {# ---------- TEACH (one notch up, so you need GAP less) ---------- #}
-      {% if result.fix.lesson %}
-      <div class="lesson-box">
-        <div class="lesson-label">Learn it</div>
-        <div class="lesson-text">{{ result.fix.lesson }}</div>
+        <div class="caveat">
+          {% if tier == 'simple' %}
+            This is "one real problem found," not "all clean" — there may be more, and I can't yet tell if it'll break months from now.
+          {% else %}
+            There may be more problems — this shows one. Never assume "all clear."
+          {% endif %}
+        </div>
+
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
 
-      {# ---------- ACCEPT / REJECT (seed of the across-time loop) ---------- #}
-      {% if result.fix_id %}
-      <form method="POST" action="/decide" class="decide-row">
-        <input type="hidden" name="fix_id" value="{{ result.fix_id }}">
-        <button type="submit" name="choice" value="accept" class="btn-decide accept">
-          I'll take this fix
-        </button>
-        <button type="submit" name="choice" value="reject" class="btn-decide reject">
-          Not this one
-        </button>
-      </form>
-      {% endif %}
-
-    {% elif result.proven %}
-      <div class="section-label">
-        <span class="tag tag-withheld">Fix withheld</span>
+      <div class="stub-notice">
+        prove, never assert — every claim above ran against your code before it was shown to you
       </div>
-      <div class="notes-text">{{ result.notes }}</div>
-    {% endif %}
 
-  {% endif %}
-
-  {# ---------- SWEEP: the standing 'what aren't we asking?' gate ---------- #}
-  {% if level != 'simple' and result.sweep %}
-  <div class="sweep-box">
-    <div class="sweep-label">What I did NOT check — so you don’t assume “all clear”</div>
-    <ul class="sweep-list">
-      {% if result.sweep.acted_on_one %}
-      <li>I showed the ONE most dangerous problem, not every problem. There may be more.</li>
-      {% endif %}
-      {% for note in result.sweep.boundary_notes %}
-      <li>{{ note }}</li>
-      {% endfor %}
-      {% if result.sweep.across_time_gap %}
-      <li>I can’t yet tell whether this breaks months from now — the across-time check isn’t built (that’s a later floor).</li>
-      {% endif %}
-    </ul>
+    </div>
   </div>
-  {% endif %}
-
-  {# ---------- CAVEAT ---------- #}
-  <div class="caveat">
-    {% if level == 'simple' %}
-    This is “one real problem found,” not “all clean” — there may be more, and I can’t yet tell if it’ll break months from now.
-    {% else %}
-    There may be more problems - this shows one. Never assume "all clear".
-    {% endif %}
-  </div>
-</div>
-{% endif %}
-
-<div class="stub-notice">
-  Engine: STUB (demo only -- runs the bundled migration example).
-  Real Claude-backed engine plugs in via the same interface when API access is ready.
 </div>
 
 <script>
+  // ---- theme switcher: persisted in localStorage, applied via data-theme on <html> ----
+  (function () {
+    const THEMES = ['obsidian', 'midnight-gold', 'terminal', 'porcelain'];
+    const saved = localStorage.getItem('gap-theme');
+    const initial = THEMES.includes(saved) ? saved : 'obsidian';
+    document.documentElement.setAttribute('data-theme', initial);
+
+    function markActive(theme) {
+      document.querySelectorAll('.theme-dot').forEach(dot => {
+        dot.classList.toggle('is-active', dot.getAttribute('data-t') === theme);
+      });
+    }
+    markActive(initial);
+
+    document.querySelectorAll('.theme-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        const t = dot.getAttribute('data-t');
+        document.documentElement.setAttribute('data-theme', t);
+        localStorage.setItem('gap-theme', t);
+        markActive(t);
+      });
+    });
+  })();
+
   const input = document.getElementById('code-input');
   const label = document.getElementById('file-name');
+  const dropArea = document.getElementById('drop-area');
   input.addEventListener('change', () => {
-    label.textContent = input.files[0]?.name || '';
+    const f = input.files[0];
+    label.textContent = f ? f.name : '';
+    dropArea.classList.toggle('has-file', !!f);
+  });
+
+  const form = document.getElementById('gap-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+  const TRACE = ['finding…', 'proving…', 'adjudicating…', 'almost done…'];
+  form.addEventListener('submit', () => {
+    if (!input.files[0]) return;
+    submitBtn.disabled = true;
+    submitBtn.classList.add('is-loading');
+    let i = 0;
+    btnText.textContent = TRACE[0];
+    setInterval(() => {
+      i = (i + 1) % TRACE.length;
+      btnText.textContent = TRACE[i];
+    }, 1400);
+  });
+
+  // ---- tier switch: one run, switch the VIEW only (never re-run the engine) ----
+  document.querySelectorAll('.tier-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tier = btn.getAttribute('data-tier');
+      document.querySelectorAll('.tierview').forEach(v => {
+        v.hidden = (v.getAttribute('data-tier') !== tier);
+      });
+      document.querySelectorAll('.tier-btn').forEach(b => {
+        b.classList.toggle('is-active', b === btn);
+      });
+    });
+  });
+
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-copy-target');
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      const text = el.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.textContent;
+        btn.textContent = 'copied ✓';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+      });
+    });
   });
 </script>
 
