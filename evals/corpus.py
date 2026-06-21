@@ -149,6 +149,92 @@ SAMPLES = [
         ),
     },
 
+    {
+        "name": "mutable_default",
+        "language": "python",
+        "has_bug": True,
+        "note": "mutable default arg accumulates across calls (classic AI/Python bug)",
+        "code": (
+            "def collect(item, into=[]):\n"
+            "    into.append(item)\n"
+            "    return into\n"
+        ),
+        "smoke": (
+            "import target\n"
+            "a = target.collect('x')\n"
+            "b = target.collect('y')\n"
+            "print('GAP_SMOKE:OK' if a == ['x'] and b == ['y'] else 'GAP_SMOKE:FAIL %r %r' % (a, b))\n"
+        ),
+    },
+    {
+        "name": "or_default_zero",
+        "language": "python",
+        "has_bug": True,
+        "note": "`config.get(k) or 30` swallows a valid 0 (the or-default falsy trap)",
+        "code": (
+            "def get_timeout(config):\n"
+            "    return config.get('timeout') or 30\n"
+        ),
+        "smoke": (
+            "import target\n"
+            "ok = target.get_timeout({'timeout': 0}) == 0 and target.get_timeout({}) == 30\n"
+            "print('GAP_SMOKE:OK' if ok else 'GAP_SMOKE:FAIL')\n"
+        ),
+    },
+    {
+        "name": "regex_unanchored",
+        "language": "python",
+        "has_bug": True,
+        "note": "re.match without end-anchor accepts trailing junk (intent: exactly 3 caps)",
+        "code": (
+            "import re\n"
+            "def is_code(s):\n"
+            "    return re.match(r'[A-Z]{3}', s) is not None\n"
+        ),
+        "smoke": (
+            "import target\n"
+            "ok = target.is_code('ABC') and not target.is_code('ABCD') and not target.is_code('AB')\n"
+            "print('GAP_SMOKE:OK' if ok else 'GAP_SMOKE:FAIL')\n"
+        ),
+    },
+    {
+        "name": "missing_branch",
+        "language": "python",
+        "has_bug": True,
+        "note": "no branch for 0 -> returns None silently (intent: classify any int)",
+        "code": (
+            "def classify(n):\n"
+            "    if n > 0:\n"
+            "        return 'positive'\n"
+            "    elif n < 0:\n"
+            "        return 'negative'\n"
+        ),
+        "smoke": (
+            "import target\n"
+            "r = target.classify(0)\n"
+            "ok = (target.classify(5) == 'positive' and target.classify(-5) == 'negative'\n"
+            "      and isinstance(r, str) and r and r not in ('positive', 'negative'))\n"
+            "print('GAP_SMOKE:OK' if ok else 'GAP_SMOKE:FAIL %r' % (r,))\n"
+        ),
+    },
+    {
+        "name": "aliased_rows",
+        "language": "python",
+        "has_bug": True,
+        "note": "[[0]*n]*n aliases one row n times; editing one edits all",
+        "code": (
+            "def make_matrix(n):\n"
+            "    return [[0] * n] * n\n"
+        ),
+        "smoke": (
+            "import target\n"
+            "m = target.make_matrix(3)\n"
+            "m[0][0] = 1\n"
+            "ok = m[1][0] == 0 and m[2][0] == 0 and len(m) == 3 and len(m[0]) == 3\n"
+            "print('GAP_SMOKE:OK' if ok else 'GAP_SMOKE:FAIL')\n"
+        ),
+    },
+
     # ─────────────── CLEAN (false-positive traps) ───────────────
     {
         "name": "add",
@@ -207,6 +293,39 @@ SAMPLES = [
             "    if b == 0:\n"
             "        return 0.0\n"
             "    return a / b\n"
+        ),
+    },
+    {
+        "name": "memoized_fib",
+        "language": "python",
+        "has_bug": False,
+        "note": "INTENT PAIR with mutable_default: the mutable default is a deliberate, correct cache",
+        "code": (
+            "def fib(n, _memo={0: 0, 1: 1}):\n"
+            "    if n not in _memo:\n"
+            "        _memo[n] = fib(n - 1) + fib(n - 2)\n"
+            "    return _memo[n]\n"
+        ),
+    },
+    {
+        "name": "greet_or_default",
+        "language": "python",
+        "has_bug": False,
+        "note": "INTENT PAIR with or_default_zero: same `or` pattern, but the fallback is the documented intent",
+        "code": (
+            "def greet(name):\n"
+            '    """Greet the user; fall back to a friendly default when no name is given."""\n'
+            "    return \"Hello, \" + (name or \"there\")\n"
+        ),
+    },
+    {
+        "name": "is_power_of_two",
+        "language": "python",
+        "has_bug": False,
+        "note": "correct, idiomatic bit trick; looks odd but is right over its whole domain",
+        "code": (
+            "def is_power_of_two(n):\n"
+            "    return n > 0 and (n & (n - 1)) == 0\n"
         ),
     },
 ]
