@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 import time
 import urllib.error
 import urllib.request
@@ -100,6 +101,15 @@ class OpenAICompatEngine(Engine):
                     delay *= 2          # exponential backoff: 4, 8, 16, 32s
                     continue
                 raise RuntimeError(f"LLM HTTP {e.code}: {detail}") from e
+            except (urllib.error.URLError, ssl.SSLError, ConnectionError, TimeoutError) as e:
+                # Transient transport: a TLS hiccup (SSLV3_ALERT_BAD_RECORD_MAC),
+                # connection reset, or timeout — same class as a 429. Retry with
+                # backoff rather than voiding the sample on a one-off network blip.
+                if attempt < 4:
+                    time.sleep(delay)
+                    delay *= 2
+                    continue
+                raise RuntimeError(f"LLM transport error: {e}") from e
         raise RuntimeError("LLM call failed after retries")
 
     @staticmethod

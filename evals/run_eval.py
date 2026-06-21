@@ -84,6 +84,14 @@ def main():
                          "Raise to 8-10 if you hit 429s on free tiers.")
     args = ap.parse_args()
 
+    # LLM output (and error text) can contain non-cp1252 unicode, e.g. U+2011
+    # (non-breaking hyphen). On a Windows console that crashes the whole eval on
+    # print. Make stdout tolerant rather than lose a run to a stray character.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
     engine = make_engine(args.engine)
     store = Store(":memory:")
 
