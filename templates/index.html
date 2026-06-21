@@ -362,6 +362,17 @@
   .sweep-list li { margin-bottom: 7px; padding-left: 16px; position: relative; }
   .sweep-list li::before { content: '—'; position: absolute; left: 0; color: var(--text-faint); }
 
+  .experiment-box {
+    margin-top: 22px; padding: 16px 18px; background: var(--flag-bg);
+    border: 1px solid var(--flag-dim); border-radius: var(--radius-sm);
+  }
+  .experiment-label {
+    font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--flag); margin-bottom: 10px;
+  }
+  .experiment-needs { font-size: 0.9rem; color: var(--text-dim); line-height: 1.55; margin-bottom: 12px; }
+  .experiment-lookfor { font-size: 0.86rem; color: var(--text); line-height: 1.55; margin-top: 12px; }
+
   .caveat {
     font-size: 0.8rem; color: var(--text-faint); text-align: center;
     margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line-soft);
@@ -669,6 +680,29 @@
             </div>
           {% endif %}
 
+        {% endif %}
+
+        {# #2: GAP suspected this but couldn't prove it in isolation — hand the user a
+           test THEY run in their real context. Honest 'suspected, not proven'. #}
+        {% if result.experiment %}
+        <div class="experiment-box">
+          <div class="experiment-label">
+            {% if tier == 'simple' %}I couldn't prove this myself — but you can{% else %}Couldn't prove it here — run this yourself{% endif %}
+          </div>
+          <p class="experiment-needs">
+            {% if tier == 'simple' %}I think something's off, but I can't be sure on my own — it needs {{ result.experiment.needs or 'your real setup' }}. Run this and see:{% else %}Suspected, not proven. I'd need {{ result.experiment.needs or 'your real environment' }} to be sure — this test finds out:{% endif %}
+          </p>
+          <div class="fix-box">
+            <div class="fix-box-head">
+              <span class="fname">experiment.{{ 'js' if result.experiment.language == 'node' else 'py' }}</span>
+              <button class="copy-btn" type="button" data-copy-target="experiment-code-{{ tier }}">copy</button>
+            </div>
+            <div class="fix-code" id="experiment-code-{{ tier }}">{{ result.experiment.script }}</div>
+          </div>
+          {% if result.experiment.look_for %}
+          <p class="experiment-lookfor"><strong>What to look for:</strong> {{ result.experiment.look_for }}</p>
+          {% endif %}
+        </div>
         {% endif %}
 
         {% if tier != 'simple' and result.sweep %}
