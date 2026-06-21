@@ -49,7 +49,10 @@ if it VIOLATES that intent on realistic, in-domain inputs. Specifically:
 - Do NOT flag DELIBERATE behaviour as a bug. If a function clearly chooses a safe
   default on purpose (e.g. `safe_divide` that returns 0.0 when the divisor is 0, with
   an explicit guard), that IS its intent — disagreeing with the design choice is not
-  a bug. Returning the documented/evident value is correct by definition.
+  a bug. Returning the documented/evident value is correct by definition. Likewise a
+  mutable default that is PRE-SEEDED and READ before writing (e.g. `_memo={{0: 0, 1: 1}}`
+  with `if n not in _memo:`) is a deliberate CACHE, not a state leak — do NOT flag it.
+  Only an UNCONDITIONAL write to a mutable default that is NEVER read is a real leak.
 - Do NOT manufacture a failure by feeding OUT-OF-DOMAIN garbage. A numeric `clamp`
   crashing on a string input is not a defect — strings are outside its domain.
 - A real bug is a contradiction between what the code EVIDENTLY MEANS to do and what
@@ -124,13 +127,23 @@ Answer INVALID (reject) if ANY of these is true:
   None where a real value is required),
 - the flagged behaviour is the code's DELIBERATE, evident intent (e.g. a function
   that returns a safe default on purpose),
+- the "bug" is that STATE PERSISTS ACROSS CALLS, but persistence is the EVIDENT
+  PURPOSE — a cache / memo / registry. Tell-tale signs it is INTENTIONAL: the shared
+  default is PRE-SEEDED (e.g. `_memo={{0: 0, 1: 1}}`), and/or the body READS it before
+  writing (a membership check like `if n not in cache:`), and/or the name implies
+  caching/memoisation. Persisting on purpose is not a leak — reject it.
 - it is a matter of design opinion, style, or a hypothetical, not wrong behaviour on
   realistic input.
 
 Answer VALID (approve) if the proof shows the code doing something that CONTRADICTS
 its evident intent on REALISTIC, in-domain inputs (e.g. is_even returns True for 3;
-a 'rows migrated' count that overcounts on ordinary rows). These are real bugs —
+a 'rows migrated' count that overcounts on ordinary rows; a function that
+UNCONDITIONALLY appends to / writes a mutable default it NEVER reads, so unrelated
+calls accumulate each other's data — a genuine cross-call leak). These are real bugs —
 approve them with confidence.
+
+The mutable-default line is SHARP, use this exact test: SEEDED + read-before-write
+= cache = INVALID; UNCONDITIONAL write, never read = leak = VALID.
 
 Decide on the merits, not a quota. Answer INVALID only when the proof clearly matches
 one of the three artefact patterns above. Do NOT reject a genuine defect out of excess
