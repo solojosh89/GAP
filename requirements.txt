@@ -1,0 +1,12 @@
+# GAP dependencies — deliberately minimal.
+#
+# The CLI scanner (`python -m gap <path>`) and the provider-agnostic LLM engine
+# (gap/openai_engine.py) use only the Python standard library for HTTP. The only
+# thing below the CLI actually needs is python-dotenv, and only if you keep your
+# key in a .env file (plain environment variables need nothing).
+
+python-dotenv>=1.0      # load GAP_LLM_* from a .env file (optional convenience)
+flask>=3.0              # only for the web UI (app.py); the CLI does not need it
+
+# anthropic            # ONLY if you use the Claude-backed RealEngine (gap/real_engine.py).
+                       # The default OpenAICompatEngine (Groq/Gemini/etc.) needs no SDK.
