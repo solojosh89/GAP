@@ -103,6 +103,19 @@ class Store:
         self.conn.commit()
         return cur.rowcount > 0
 
+    def add_outcome(self, finding_id: int, result: str) -> int:
+        """Record what happened when the user RAN the experiment for a flagged-but-
+        unproven finding: 'real' (it was a bug) or 'fine' (it held up). This is the
+        FIRST real data into the across-time/outcome table (Floor 2) and the seed of
+        HONEST confidence calibration — over many runs it answers 'of the things GAP
+        flagged but couldn't prove, how often did they turn out real?'."""
+        cur = self.conn.execute(
+            "INSERT INTO outcome (finding_id, held_or_broke, created_at) VALUES (?,?,?)",
+            (finding_id, result, time.time()),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
     def full_record(self, submission_id: int) -> dict:
         """Read back a complete run — proves the data model round-trips."""
         c = self.conn

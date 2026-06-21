@@ -121,6 +121,25 @@ def decide():
                            diff_html=diff_html)
 
 
+@app.route("/experiment_result", methods=["POST"])
+def experiment_result():
+    """Record what the user found when they RAN the experiment for a flagged-but-
+    unproven finding: 'real' (it was a bug) or 'fine' (it held up). First real data
+    into the across-time/outcome loop (Floor 2) — the seed of honest calibration."""
+    try:
+        finding_id = int(request.form.get("finding_id", ""))
+    except (TypeError, ValueError):
+        return render_template("index.html", result=None, level="simple",
+                               error="Bad finding id."), 400
+    result = request.form.get("result")
+    if result not in ("real", "fine"):
+        return render_template("index.html", result=None, level="simple",
+                               error="Bad result."), 400
+    _store.add_outcome(finding_id, result)
+    return render_template("index.html", result=None, level="simple",
+                           experiment_recorded=result)
+
+
 def _build_diff(original: str, fixed: str) -> str:
     """Line-level diff, rendered as simple HTML spans. No external dependency —
     difflib is stdlib. Unchanged lines are dimmed; only the changed lines stand

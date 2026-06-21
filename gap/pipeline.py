@@ -26,6 +26,7 @@ class Outcome:
     fix: Optional[Fix]
     notes: str
     fix_id: Optional[int] = None   # db id of the offered fix, for accept/reject
+    finding_id: Optional[int] = None  # db id of the finding, for experiment-result feedback
     sweep: Optional[Sweep] = None  # the standing 'what aren't we asking?' gate
     experiment: Optional[Experiment] = None  # user-runnable test when GAP couldn't prove it
 
@@ -96,7 +97,7 @@ def run(code: str, language: str, engine: Engine, store: Store,
                 experiment = engine.experiment(code, finding)
             return Outcome(finding, False, _detail(r1), False, None,
                            "Could not prove the problem by running it — flagged, not claimed.",
-                           sweep=sweep, experiment=experiment)
+                           sweep=sweep, experiment=experiment, finding_id=finding_id)
 
         # 2b) ADJUDICATION GATE. A proof that RAN is necessary but not sufficient: the
         # engine can "prove" an out-of-domain crash or a design opinion. A skeptical

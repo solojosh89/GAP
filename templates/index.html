@@ -487,6 +487,16 @@
       <div class="error-banner">{{ error }}</div>
       {% endif %}
 
+      {% if experiment_recorded %}
+      <div class="decided-banner {% if experiment_recorded == 'fine' %}rejected{% endif %}">
+        {% if experiment_recorded == 'real' %}
+        ✓ Recorded — you confirmed it was real. GAP keeps that to learn how often its hunches actually hold up.
+        {% else %}
+        Recorded — it held up fine. GAP keeps that too: a hunch that didn't pan out is exactly the signal that keeps it honest over time.
+        {% endif %}
+      </div>
+      {% endif %}
+
       {% if decided %}
       <div class="decided-banner {% if decided == 'reject' %}rejected{% endif %}">
         {% if decided == 'accept' %}
@@ -701,6 +711,14 @@
           </div>
           {% if result.experiment.look_for %}
           <p class="experiment-lookfor"><strong>What to look for:</strong> {{ result.experiment.look_for }}</p>
+          {% endif %}
+          {% if result.finding_id %}
+          <p class="experiment-needs" style="margin-top:14px;margin-bottom:8px">When you've run it, tell GAP what happened — that's how it learns whether its hunches hold up:</p>
+          <form method="POST" action="/experiment_result" class="decide-row">
+            <input type="hidden" name="finding_id" value="{{ result.finding_id }}">
+            <button type="submit" name="result" value="real" class="btn-decide reject">It was real</button>
+            <button type="submit" name="result" value="fine" class="btn-decide accept">It held up fine</button>
+          </form>
           {% endif %}
         </div>
         {% endif %}
