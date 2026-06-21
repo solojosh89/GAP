@@ -84,6 +84,20 @@ def run(code: str, language: str, engine: Engine, store: Store,
         _write(workdir, "target.py", code)
         _write(workdir, "proof.py", proof.script)
         r1 = run_script("proof.py", workdir)
+
+        # RECALL RETRY: a proof that printed NEITHER marker is a BROKEN script (it
+        # crashed / bug in the test), not a real 'no bug' — the cause of misses like
+        # is_even / running_max. Retry ONCE, feeding the error back so the engine
+        # fixes its script. This fixes the instrument; it does NOT shop for a positive
+        # (a clean BUG_ABSENT is NOT retried, and the retry prompt forbids forcing a
+        # verdict). If the retry still imports `target`, use it.
+        if not r1.saw(BUG_PRESENT) and not r1.saw(BUG_ABSENT):
+            retry = engine.prove(code, finding, prior=f"Its output was:\n{_detail(r1)[:500]}")
+            if "target" in retry.script:
+                proof = retry
+                _write(workdir, "proof.py", proof.script)
+                r1 = run_script("proof.py", workdir)
+
         proven = r1.saw(BUG_PRESENT)
         store.add_proof(finding_id, proof.script, proven)
 

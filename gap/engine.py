@@ -16,7 +16,10 @@ class Engine:
     def find(self, code: str, language: str) -> Finding:
         raise NotImplementedError
 
-    def prove(self, code: str, finding: Finding) -> Proof:
+    def prove(self, code: str, finding: Finding, prior: str = None) -> Proof:
+        """Write a runnable demo. `prior` (set only on a retry) describes a previous
+        proof attempt that printed NO verdict (a broken SCRIPT), so the engine can
+        fix its script — NOT to force a positive result."""
         raise NotImplementedError
 
     def fix(self, code: str, finding: Finding) -> Fix:
@@ -93,7 +96,10 @@ class StubEngine(Engine):
             ),
         )
 
-    def prove(self, code: str, finding: Finding) -> Proof:
+    def prove(self, code: str, finding: Finding, prior: str = None) -> Proof:
+        # `prior` is ignored: the stub's proof is hard-coded and deterministic, so it
+        # never crashes and the retry path never fires for it. The param exists only
+        # to satisfy the interface the pipeline calls on retry.
         if finding.confidence == "none":
             # Nothing was claimed, so there is nothing to prove. Print BUG_ABSENT
             # cleanly instead of crashing on code the stub never understood.

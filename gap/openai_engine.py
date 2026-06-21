@@ -144,12 +144,20 @@ class OpenAICompatEngine(Engine):
             analogy=d.get("analogy", ""),
         )
 
-    def prove(self, code: str, finding: Finding) -> Proof:
+    def prove(self, code: str, finding: Finding, prior: str = None) -> Proof:
         # Nothing claimed -> nothing to prove. Honest BUG_ABSENT, no LLM call.
         if finding.confidence == "none":
             return Proof(script=f'print("{BUG_ABSENT}")  # engine made no claim\n', language="python")
         user = (f"Finding: {finding.problem}\n\nCode under test:\n```\n{code}\n```\n\n"
                 f"Write the self-contained demonstration script. {_PROOF_KEYS}")
+        if prior:
+            # Retry: the previous proof SCRIPT was broken (printed no verdict). Fix the
+            # script so it RUNS — not so it returns a particular answer.
+            user += (f"\n\nRETRY — your previous attempt printed NEITHER marker, so it "
+                     f"crashed or had a bug in the SCRIPT itself (not necessarily the "
+                     f"target). {prior}\nWrite a CORRECTED, runnable script that prints "
+                     f"exactly one marker based on the REAL behaviour. Do NOT force a "
+                     f"verdict — if the corrected script shows no bug, print {BUG_ABSENT}.")
         d = self._parse(self._chat(PROVE_SYSTEM, user))
         return Proof(script=d.get("script", ""), language=d.get("language", "python"))
 

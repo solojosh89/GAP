@@ -247,9 +247,15 @@ class RealEngine(Engine):
                        confidence=d["confidence"], why_it_matters=d["why_it_matters"],
                        intent=d.get("intent", ""))
 
-    def prove(self, code: str, finding: Finding) -> Proof:
+    def prove(self, code: str, finding: Finding, prior: str = None) -> Proof:
         user = (f"Finding: {finding.problem}\n\nCode under test:\n```\n{code}\n```\n\n"
                 f"Write the demonstration script.")
+        if prior:
+            # Retry: fix the broken SCRIPT so it runs — not so it returns a verdict.
+            user += (f"\n\nRETRY — your previous attempt printed NEITHER marker (it "
+                     f"crashed or had a bug in the SCRIPT itself). {prior}\nWrite a "
+                     f"corrected, runnable script that prints one marker from the REAL "
+                     f"behaviour. Do NOT force a verdict.")
         d = self._ask(PROVE_SYSTEM, user, _PROOF_SCHEMA)
         return Proof(script=d["script"], language=d["language"])
 
