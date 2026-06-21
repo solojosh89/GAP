@@ -66,6 +66,19 @@ class Sweep:
 
 
 @dataclass
+class Experiment:
+    """For a FLAGGED-but-unproven finding: a script the USER runs in THEIR real
+    context (their DB, real data, live concurrency, a framework) that GAP could not
+    reproduce in its isolated sandbox. Turns a dead 'unproved' into a checkable test
+    the user can run without expertise — prove-don't-assert extended to the things
+    GAP itself cannot run. It is a TEST FOR THE USER, never a claim."""
+    script: str
+    language: str = "python"
+    look_for: str = ""   # plain: what output means the bug is REAL vs FINE
+    needs: str = ""      # what GAP lacked to prove it itself (e.g. 'your real database')
+
+
+@dataclass
 class RunResult:
     """What the sandbox observed when it ran a script."""
     exit_code: Optional[int]

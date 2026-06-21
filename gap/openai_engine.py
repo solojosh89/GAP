@@ -25,9 +25,10 @@ import time
 import urllib.error
 import urllib.request
 
-from .contract import BUG_ABSENT, Finding, Fix, Proof
+from .contract import BUG_ABSENT, Experiment, Finding, Fix, Proof
 from .engine import Engine
-from .real_engine import FIND_SYSTEM, PROVE_SYSTEM, FIX_SYSTEM, ADJUDICATE_SYSTEM
+from .real_engine import (FIND_SYSTEM, PROVE_SYSTEM, FIX_SYSTEM, ADJUDICATE_SYSTEM,
+                          EXPERIMENT_SYSTEM)
 
 DEFAULT_BASE_URL = "https://api.moonshot.ai/v1"
 DEFAULT_MODEL = "kimi-k2-0711-preview"
@@ -43,6 +44,9 @@ _PROOF_KEYS = ('Respond with ONLY a JSON object, no prose: '
                '{"language": "python"|"node", "script": string}')
 _FIX_KEYS = ('Respond with ONLY a JSON object, no prose: '
              '{"fixed_code": string, "explanation": string, "lesson": string}')
+_EXPERIMENT_KEYS = ('Respond with ONLY a JSON object, no prose: '
+                    '{"script": string, "language": "python"|"node", '
+                    '"look_for": string, "needs": string}')
 
 
 class OpenAICompatEngine(Engine):
@@ -187,3 +191,19 @@ class OpenAICompatEngine(Engine):
             "Problems that only show up against a real database, a network call, or a "
             "live screen can be flagged but not proven by running."
         ]
+
+    def experiment(self, code: str, finding: Finding):
+        """Hand the user a runnable test for a finding GAP could not prove itself.
+        On any transport/parse failure return None — no experiment is better than a
+        broken one. Never asserts; it's a test for the user to run."""
+        user = (f"Suspected problem (GAP could NOT prove it in isolation): {finding.problem}\n"
+                f"Evident intent: {finding.intent or '(none stated)'}\n\n"
+                f"Code:\n```\n{code}\n```\n\n{_EXPERIMENT_KEYS}")
+        try:
+            d = self._parse(self._chat(EXPERIMENT_SYSTEM, user))
+        except Exception:
+            return None
+        if not d.get("script"):
+            return None
+        return Experiment(script=d.get("script", ""), language=d.get("language", "python"),
+                          look_for=d.get("look_for", ""), needs=d.get("needs", ""))

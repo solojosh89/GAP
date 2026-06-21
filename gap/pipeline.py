@@ -11,7 +11,7 @@ import tempfile
 from dataclasses import dataclass
 from typing import Optional
 
-from .contract import BUG_ABSENT, BUG_PRESENT, Finding, Fix, RunResult, Sweep
+from .contract import BUG_ABSENT, BUG_PRESENT, Experiment, Finding, Fix, RunResult, Sweep
 from .engine import Engine
 from .sandbox import run_script
 from .store import Store
@@ -27,6 +27,7 @@ class Outcome:
     notes: str
     fix_id: Optional[int] = None   # db id of the offered fix, for accept/reject
     sweep: Optional[Sweep] = None  # the standing 'what aren't we asking?' gate
+    experiment: Optional[Experiment] = None  # user-runnable test when GAP couldn't prove it
 
 
 # Do-no-harm check: after the fix, the code must at least still import/compile
@@ -87,9 +88,15 @@ def run(code: str, language: str, engine: Engine, store: Store,
 
         if not proven:
             # Honest gate: if we cannot prove it, we FLAG it, we do not claim it.
+            # But don't leave the user at a dead end — when there IS a real claim
+            # (not confidence:none), hand them a test THEY can run in their real
+            # context to find out. (#2: turn 'unproved' into a checkable experiment.)
+            experiment = None
+            if finding.confidence != "none":
+                experiment = engine.experiment(code, finding)
             return Outcome(finding, False, _detail(r1), False, None,
                            "Could not prove the problem by running it — flagged, not claimed.",
-                           sweep=sweep)
+                           sweep=sweep, experiment=experiment)
 
         # 2b) ADJUDICATION GATE. A proof that RAN is necessary but not sufficient: the
         # engine can "prove" an out-of-domain crash or a design opinion. A skeptical

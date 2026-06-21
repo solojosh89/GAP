@@ -27,6 +27,12 @@ class Engine:
         only FLAG, not PROVE, for this code. Default: nothing extra to disclose."""
         return []
 
+    def experiment(self, code: str, finding: Finding):
+        """For a finding GAP could NOT prove itself: a user-runnable Experiment to
+        check it in their real context. Default: None (offline/stub). Real engines
+        override. Returns gap.contract.Experiment or None."""
+        return None
+
     def adjudicate(self, code: str, finding: Finding, proof_script: str, proof_output: str):
         """Skeptical second pass, run AFTER a proof shows the bug. Is this a GENUINE
         defect (intent violation on in-domain input), or an artefact (out-of-domain
